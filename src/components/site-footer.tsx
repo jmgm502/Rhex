@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Github } from "lucide-react"
+import type { ReactNode } from "react"
 
 import packageJson from "../../package.json"
 
@@ -10,6 +11,76 @@ import { AddonSlotRenderer, AddonSurfaceRenderer } from "@/addons-host";
 
 function isExternalHref(href: string) {
   return /^https?:\/\//i.test(href)
+}
+
+function decodeHtmlEntities(value: string) {
+  return value
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#39;", "'")
+}
+
+function stripHtmlTags(value: string) {
+  return value.replace(/<[^>]*>/g, "")
+}
+
+function normalizeFooterLinkHref(href: string) {
+  const normalizedHref = decodeHtmlEntities(href).trim()
+
+  if (normalizedHref.startsWith("/") && !normalizedHref.startsWith("//")) {
+    return normalizedHref
+  }
+
+  try {
+    const url = new URL(normalizedHref)
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
+function renderFooterCopyrightText(text: string) {
+  const linkPattern = /<a\s+[^>]*href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))[^>]*>([\s\S]*?)<\/a>/gi
+  const nodes: ReactNode[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = linkPattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(text.slice(lastIndex, match.index))
+    }
+
+    const rawHref = match[1] ?? match[2] ?? match[3] ?? ""
+    const href = normalizeFooterLinkHref(rawHref)
+    const label = decodeHtmlEntities(stripHtmlTags(match[4] ?? "")).trim()
+
+    if (href && label) {
+      const isExternal = isExternalHref(href)
+      nodes.push(
+        <Link
+          key={`copyright-link-${match.index}`}
+          href={href}
+          target={isExternal ? "_blank" : undefined}
+          rel={isExternal ? "noreferrer noopener" : undefined}
+          className="underline underline-offset-3 transition-colors hover:text-foreground"
+        >
+          {label}
+        </Link>,
+      )
+    } else {
+      nodes.push(decodeHtmlEntities(stripHtmlTags(match[0])))
+    }
+
+    lastIndex = linkPattern.lastIndex
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex))
+  }
+
+  return nodes.length > 0 ? nodes : text
 }
 
 
@@ -73,7 +144,7 @@ export async function SiteFooter() {
 
           <div className="flex flex-col items-center gap-3 pt-2 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
             <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-muted-foreground sm:justify-start">
-              <span>{footerCopyrightText}</span>
+              <span>{renderFooterCopyrightText(footerCopyrightText)}</span>
               {footerBrandingVisible ? (
                 <>
                   <span className="hidden sm:inline">·</span>

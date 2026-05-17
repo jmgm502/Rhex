@@ -1,7 +1,7 @@
 "use client"
 
 import { Heart } from "lucide-react"
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useState, useTransition, type ComponentProps } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -18,6 +18,8 @@ interface FollowToggleButtonProps {
   showLabel?: boolean
   onFollowStateChange?: (state: { followed: boolean; changed: boolean }) => void
   className?: string
+  variant?: ComponentProps<typeof Button>["variant"]
+  size?: ComponentProps<typeof Button>["size"]
 }
 
 export function FollowToggleButton({
@@ -29,6 +31,8 @@ export function FollowToggleButton({
   showLabel = false,
   onFollowStateChange,
   className = "",
+  variant,
+  size,
 }: FollowToggleButtonProps) {
   const [followed, setFollowed] = useState(initialFollowed)
   const [isPending, startTransition] = useTransition()
@@ -45,8 +49,8 @@ export function FollowToggleButton({
       title={label}
       aria-label={label}
       aria-pressed={followed}
-      variant={followed ? "secondary" : "outline"}
-      size={showLabel ? "xs" : "icon"}
+      variant={variant ?? (followed ? "secondary" : "outline")}
+      size={size ?? (showLabel ? "xs" : "icon")}
       className={cn("rounded-full", className)}
       onClick={() => {
         const desiredFollowed = !followed

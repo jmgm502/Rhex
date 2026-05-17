@@ -494,7 +494,7 @@ export async function findUserFollowersByIdCursor(params: { userId: number; page
 }
 
 export async function findFollowFeedTargetIds(userId: number) {
-  const [boardFollows, userFollows] = await Promise.all([
+  const [boardFollows, userFollows, tagFollows] = await Promise.all([
     prisma.boardFollow.findMany({
       where: { userId },
       select: {
@@ -507,11 +507,18 @@ export async function findFollowFeedTargetIds(userId: number) {
         followingId: true,
       },
     }),
+    prisma.tagFollow.findMany({
+      where: { userId },
+      select: {
+        tagId: true,
+      },
+    }),
   ])
 
   return {
     boardIds: boardFollows.map((follow) => follow.boardId),
     authorIds: userFollows.map((follow) => follow.followingId),
+    tagIds: tagFollows.map((follow) => follow.tagId),
   }
 }
 

@@ -501,6 +501,8 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
                     canReport={Boolean(currentUser && currentUser.id !== displayPostWithAiIndicator.authorId)}
                     reportTargetId={displayPostWithAiIndicator.id}
                     reportLabel={displayPostWithAiIndicator.title}
+                    initialFollowed={isFollowingPost}
+                    viewCount={displayPostWithAiIndicator.stats.views}
                   >
                     <Card className={hasRewardPoolHighlight || hasAppendices ? "rounded-b-none" : undefined}>
                       <CardContent>

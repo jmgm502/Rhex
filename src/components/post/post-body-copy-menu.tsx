@@ -1,9 +1,11 @@
 "use client"
 
 import { useMemo, useState, type ReactNode } from "react"
-import { Copy, Ellipsis, Flag } from "lucide-react"
+import { Copy, Ellipsis, Eye, Flag } from "lucide-react"
 
+import { FollowToggleButton } from "@/components/follow-toggle-button"
 import { ReportDialog } from "@/components/post/report-dialog"
+import { Button } from "@/components/ui/button"
 import { getPostPath } from "@/lib/post-links"
 import type { PostLinkDisplayMode } from "@/lib/site-settings"
 import { toast } from "@/components/ui/toast"
@@ -18,10 +20,12 @@ interface PostBodyCopyMenuProps {
   canReport?: boolean
   reportTargetId?: string
   reportLabel?: string
+  initialFollowed?: boolean
+  viewCount?: number
   children: ReactNode
 }
 
-export function PostBodyCopyMenu({ post, postLinkDisplayMode = "SLUG", canReport = false, reportTargetId, reportLabel = "当前帖子", children }: PostBodyCopyMenuProps) {
+export function PostBodyCopyMenu({ post, postLinkDisplayMode = "SLUG", canReport = false, reportTargetId, reportLabel = "当前帖子", initialFollowed, viewCount, children }: PostBodyCopyMenuProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const copyPath = useMemo(
@@ -57,42 +61,69 @@ export function PostBodyCopyMenu({ post, postLinkDisplayMode = "SLUG", canReport
     >
       <div
         className={cn(
-          "absolute right-4 top-4 z-20 flex items-start gap-2 transition-opacity duration-150",
+          "absolute right-4 top-4 z-20 flex items-start gap-1 rounded-full transition-opacity duration-150",
           isHovered ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       >
         {isMenuOpen ? (
-          <div className="flex flex-col items-end gap-2">
-            <button
+          <div className="flex min-w-28 flex-col items-stretch gap-1 rounded-2xl border border-border bg-background/95 p-1 shadow-sm backdrop-blur-xs">
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={handleCopyLink}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/95 px-3 py-1.5 text-xs font-medium text-foreground shadow-xs backdrop-blur-xs transition-colors hover:bg-accent"
+              className="h-7 justify-start rounded-full px-2 text-xs"
             >
-              <Copy className="h-3.5 w-3.5" />
+              <Copy data-icon="inline-start" />
               <span>复制链接</span>
-            </button>
+            </Button>
+            {typeof initialFollowed === "boolean" ? (
+              <FollowToggleButton
+                targetType="post"
+                targetId={post.id}
+                initialFollowed={initialFollowed}
+                activeLabel="已关注帖子"
+                inactiveLabel="关注帖子"
+                showLabel
+                variant="ghost"
+                size="sm"
+                className="h-7 justify-start rounded-full px-2 text-xs"
+              />
+            ) : null}
             {canReport && reportTargetId ? (
               <ReportDialog
                 targetType="POST"
                 targetId={reportTargetId}
                 targetLabel={reportLabel}
                 buttonText="举报帖子"
-                icon={<Flag className="h-3.5 w-3.5" />}
+                icon={<Flag data-icon="inline-start" />}
                 showLabelWithIcon
-                buttonClassName="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/95 px-3 py-1.5 text-xs font-medium text-foreground shadow-xs backdrop-blur-xs transition-colors hover:bg-accent"
+                buttonSize="sm"
+                buttonClassName="h-7 justify-start rounded-full px-2 text-xs"
               />
             ) : null}
           </div>
         ) : null}
-        <button
-          type="button"
-          aria-label="帖子操作"
-          title="帖子操作"
-          onClick={() => setIsMenuOpen((current) => !current)}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background/95 text-muted-foreground shadow-xs backdrop-blur-xs transition-colors hover:bg-accent hover:text-foreground"
-        >
-          <Ellipsis className="h-4 w-4" />
-        </button>
+        <div className="flex flex-col items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="帖子操作"
+            title="帖子操作"
+            aria-expanded={isMenuOpen}
+            onClick={() => setIsMenuOpen((current) => !current)}
+            className="rounded-full border border-border bg-background/95 text-muted-foreground shadow-sm backdrop-blur-xs hover:text-foreground"
+          >
+            <Ellipsis />
+          </Button>
+          {typeof viewCount === "number" ? (
+            <span className="inline-flex h-7 items-center gap-1 rounded-full bg-secondary/80 px-2.5 text-xs text-muted-foreground shadow-sm backdrop-blur-xs">
+              <Eye className="h-3.5 w-3.5" />
+              {viewCount}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {children}

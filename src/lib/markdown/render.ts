@@ -40,6 +40,7 @@ const HTML_CODE_BLOCK_START_PATTERN = /^\s*<(?:!doctype|html|head|body|meta|titl
 const HTML_CODE_BLOCK_TAG_LINE_PATTERN = /^\s*(?:<!doctype[^>]*>|<!--.*?-->|<\/?[a-zA-Z][\w:-]*(?:\s+[^>]*)?\s*\/?>)\s*$/i
 const HTML_CODE_BLOCK_INLINE_TAG_PATTERN = /^\s*<([a-zA-Z][\w:-]*)(?:\s+[^>]*)?>.*<\/\1>\s*$/i
 const HTML_CODE_BLOCK_LANGUAGE_ALIASES = new Set(["html", "htm"])
+const ASCII_LINK_CANDIDATE_PATTERN = /https?:\/\/[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::\d{1,5})?(?:[/?#][A-Za-z0-9\-._~:/?#\[\]@!$&*+,;=%]*)?|(?:www\.)?[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+(?:\:\d{1,5})?(?:[/?#][A-Za-z0-9\-._~:/?#\[\]@!$&*+,;=%]*)?/gi
 
 type CalloutType = (typeof CALLOUT_TYPES)[number]
 const MARKDOWN_RENDERER_CACHE_LIMIT = 8
@@ -47,6 +48,56 @@ const markdownRendererCache = new Map<string, MarkdownIt>()
 
 interface MarkdownRenderEnv {
   __usedHeadingSlugs?: Map<string, number>
+}
+
+interface MarkdownToken {
+  type: string
+  tag: string
+  nesting: number
+  content: string
+  attrs: Array<[string, string]> | null
+  markup: string
+  info: string
+  level: number
+  children?: MarkdownToken[] | null
+}
+
+interface MarkdownTokenConstructor {
+  new (type: string, tag: string, nesting: number): MarkdownToken
+}
+
+interface MarkdownCoreState {
+  tokens: MarkdownToken[]
+  Token: MarkdownTokenConstructor
+}
+
+interface LinkifyMatch {
+  index: number
+  lastIndex: number
+  text: string
+  url: string
+}
+
+interface LinkifyLike {
+  match(input: string): LinkifyMatch[] | null
+}
+
+interface MarkdownItWithLinkifyCore extends MarkdownIt {
+  core: {
+    ruler: {
+      after(afterName: string, ruleName: string, rule: (state: MarkdownCoreState) => void): void
+    }
+  }
+  linkify: LinkifyLike
+  normalizeLink(url: string): string
+  validateLink(url: string): boolean
+}
+
+interface AsciiLinkMatch {
+  start: number
+  end: number
+  text: string
+  url: string
 }
 
 function slugify(text: string) {
@@ -57,6 +108,255 @@ function slugify(text: string) {
     .replace(/[^\p{L}\p{N}\s-]/gu, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
+}
+
+function createTextToken(Token: MarkdownTokenConstructor, content: string, level: number) {
+  const token = new Token("text", "", 0)
+  token.content = content
+  token.level = level
+  return token
+}
+
+function cloneMarkdownToken(Token: MarkdownTokenConstructor, token: MarkdownToken) {
+  const nextToken = new Token(token.type, token.tag, token.nesting)
+  nextToken.content = token.content
+  nextToken.attrs = token.attrs ? token.attrs.map(([name, value]) => [name, value]) : null
+  nextToken.markup = token.markup
+  nextToken.info = token.info
+  nextToken.level = token.level
+  return nextToken
+}
+
+function trimAsciiAutoLinkCandidate(input: string) {
+  return input.replace(/[.,!?;:]+$/g, "")
+}
+
+function hasAsciiAutoLinkBoundary(text: string, start: number, end: number) {
+  const before = start > 0 ? text[start - 1] : ""
+  const after = end < text.length ? text[end] : ""
+
+  return !/[A-Za-z0-9@/._~-]/.test(before) && !/[A-Za-z0-9@/_~-]/.test(after)
+}
+
+function findAsciiAutoLinkMatch(text: string, linkify: LinkifyLike): AsciiLinkMatch | null {
+  ASCII_LINK_CANDIDATE_PATTERN.lastIndex = 0
+
+  for (const match of text.matchAll(ASCII_LINK_CANDIDATE_PATTERN)) {
+    const rawCandidate = match[0]
+    const candidate = trimAsciiAutoLinkCandidate(rawCandidate)
+    const start = match.index ?? 0
+    const end = start + candidate.length
+
+    if (!candidate || !hasAsciiAutoLinkBoundary(text, start, end)) {
+      continue
+    }
+
+    const linkMatches = linkify.match(candidate)
+    const linkMatch = linkMatches?.[0]
+    if (!linkMatch || linkMatch.index !== 0 || linkMatch.lastIndex !== candidate.length) {
+      continue
+    }
+
+    if (start === 0 && end === text.length) {
+      return null
+    }
+
+    return {
+      start,
+      end,
+      text: candidate,
+      url: linkMatch.url,
+    }
+  }
+
+  return null
+}
+
+function collectAsciiAutoLinkMatches(text: string, linkify: LinkifyLike) {
+  const matches: AsciiLinkMatch[] = []
+  let lastEnd = 0
+
+  ASCII_LINK_CANDIDATE_PATTERN.lastIndex = 0
+
+  for (const match of text.matchAll(ASCII_LINK_CANDIDATE_PATTERN)) {
+    const rawCandidate = match[0]
+    const candidate = trimAsciiAutoLinkCandidate(rawCandidate)
+    const start = match.index ?? 0
+    const end = start + candidate.length
+
+    if (!candidate || start < lastEnd || !hasAsciiAutoLinkBoundary(text, start, end)) {
+      continue
+    }
+
+    const linkMatches = linkify.match(candidate)
+    const linkMatch = linkMatches?.[0]
+    if (!linkMatch || linkMatch.index !== 0 || linkMatch.lastIndex !== candidate.length) {
+      continue
+    }
+
+    matches.push({
+      start,
+      end,
+      text: candidate,
+      url: linkMatch.url,
+    })
+    lastEnd = end
+  }
+
+  return matches
+}
+
+function splitAutoLinkToken(
+  tokens: MarkdownToken[],
+  index: number,
+  Token: MarkdownTokenConstructor,
+  markdown: MarkdownItWithLinkifyCore,
+) {
+  const linkOpenToken = tokens[index]
+  const linkTextToken = tokens[index + 1]
+  const linkCloseToken = tokens[index + 2]
+
+  if (
+    !linkOpenToken
+    || !linkTextToken
+    || !linkCloseToken
+    || linkOpenToken.type !== "link_open"
+    || linkTextToken.type !== "text"
+    || linkCloseToken.type !== "link_close"
+    || linkOpenToken.markup !== "linkify"
+    || linkOpenToken.info !== "auto"
+  ) {
+    return null
+  }
+
+  const linkMatch = findAsciiAutoLinkMatch(linkTextToken.content, markdown.linkify)
+  if (!linkMatch) {
+    return null
+  }
+
+  const normalizedUrl = markdown.normalizeLink(linkMatch.url)
+  if (!markdown.validateLink(normalizedUrl)) {
+    return null
+  }
+
+  const prefix = linkTextToken.content.slice(0, linkMatch.start)
+  const suffix = linkTextToken.content.slice(linkMatch.end)
+  const replacement: MarkdownToken[] = []
+
+  if (prefix) {
+    replacement.push(createTextToken(Token, prefix, linkOpenToken.level))
+  }
+
+  const nextLinkOpenToken = cloneMarkdownToken(Token, linkOpenToken)
+  nextLinkOpenToken.attrs = upsertAttribute(nextLinkOpenToken.attrs ?? undefined, "href", normalizedUrl)
+  replacement.push(nextLinkOpenToken)
+  replacement.push(createTextToken(Token, linkMatch.text, linkTextToken.level))
+  replacement.push(cloneMarkdownToken(Token, linkCloseToken))
+
+  if (suffix) {
+    replacement.push(createTextToken(Token, suffix, linkOpenToken.level))
+  }
+
+  return replacement
+}
+
+function linkifyAsciiTextToken(
+  token: MarkdownToken,
+  Token: MarkdownTokenConstructor,
+  markdown: MarkdownItWithLinkifyCore,
+) {
+  const linkMatches = collectAsciiAutoLinkMatches(token.content, markdown.linkify)
+  if (linkMatches.length === 0) {
+    return null
+  }
+
+  const replacement: MarkdownToken[] = []
+  let lastEnd = 0
+  let level = token.level
+
+  for (const linkMatch of linkMatches) {
+    const normalizedUrl = markdown.normalizeLink(linkMatch.url)
+    if (!markdown.validateLink(normalizedUrl)) {
+      continue
+    }
+
+    if (linkMatch.start > lastEnd) {
+      replacement.push(createTextToken(Token, token.content.slice(lastEnd, linkMatch.start), token.level))
+    }
+
+    const linkOpenToken = new Token("link_open", "a", 1)
+    linkOpenToken.attrs = [["href", normalizedUrl]]
+    linkOpenToken.level = level++
+    linkOpenToken.markup = "linkify"
+    linkOpenToken.info = "auto"
+    replacement.push(linkOpenToken)
+
+    replacement.push(createTextToken(Token, linkMatch.text, level))
+
+    const linkCloseToken = new Token("link_close", "a", -1)
+    linkCloseToken.level = --level
+    linkCloseToken.markup = "linkify"
+    linkCloseToken.info = "auto"
+    replacement.push(linkCloseToken)
+
+    lastEnd = linkMatch.end
+  }
+
+  if (lastEnd === 0) {
+    return null
+  }
+
+  if (lastEnd < token.content.length) {
+    replacement.push(createTextToken(Token, token.content.slice(lastEnd), token.level))
+  }
+
+  return replacement
+}
+
+function fixCjkAutoLinkBoundaries(markdown: MarkdownItWithLinkifyCore) {
+  markdown.core.ruler.after("linkify", "fix_cjk_auto_link_boundaries", (state) => {
+    for (const blockToken of state.tokens) {
+      if (blockToken.type !== "inline" || !blockToken.children?.length) {
+        continue
+      }
+
+      for (let index = 0; index < blockToken.children.length - 2; index++) {
+        const replacement = splitAutoLinkToken(blockToken.children, index, state.Token, markdown)
+        if (!replacement) {
+          continue
+        }
+
+        blockToken.children.splice(index, 3, ...replacement)
+        index += replacement.length - 1
+      }
+
+      let linkDepth = 0
+      for (let index = 0; index < blockToken.children.length; index++) {
+        const childToken = blockToken.children[index]
+        if (childToken.type === "link_open") {
+          linkDepth++
+          continue
+        }
+
+        if (childToken.type === "link_close") {
+          linkDepth = Math.max(0, linkDepth - 1)
+          continue
+        }
+
+        if (linkDepth > 0 || childToken.type !== "text") {
+          continue
+        }
+
+        const replacement = linkifyAsciiTextToken(childToken, state.Token, markdown)
+        if (!replacement) {
+          continue
+        }
+
+        blockToken.children.splice(index, 1, ...replacement)
+        index += replacement.length - 1
+      }
+    }
+  })
 }
 
 function upsertAttribute(attrs: Array<[string, string]> | undefined, name: string, value: string) {
@@ -510,6 +810,7 @@ function createMarkdownRenderer(emojiItems: MarkdownEmojiItem[]) {
       return `<pre class="md-code-block"><div class="md-code-header"><span>${safeLanguage || "text"}</span></div><code class="language-${safeLanguage}">${escapeHtml(code)}</code></pre>`
     },
   })
+  fixCjkAutoLinkBoundaries(md as MarkdownItWithLinkifyCore)
 
   md.use(markdownItAbbr)
   md.use(markdownItDeflist)

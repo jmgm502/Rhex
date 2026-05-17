@@ -23,11 +23,12 @@ interface ReportDialogProps {
   targetLabel: string
   buttonText?: string
   buttonClassName?: string
+  buttonSize?: React.ComponentProps<typeof Button>["size"]
   icon?: ReactNode
   showLabelWithIcon?: boolean
 }
 
-export function ReportDialog({ targetType, targetId, targetLabel, buttonText = "举报", buttonClassName, icon, showLabelWithIcon = false }: ReportDialogProps) {
+export function ReportDialog({ targetType, targetId, targetLabel, buttonText = "举报", buttonClassName, buttonSize = "default", icon, showLabelWithIcon = false }: ReportDialogProps) {
   const [open, setOpen] = useState(false)
   const [reasonType, setReasonType] = useState<string>(REPORT_REASON_OPTIONS[0])
   const [reasonDetail, setReasonDetail] = useState("")
@@ -76,7 +77,7 @@ export function ReportDialog({ targetType, targetId, targetLabel, buttonText = "
 
   return (
     <>
-      <Button type="button" variant="ghost" title={buttonText} aria-label={buttonText} className={buttonClassName ?? "h-8 px-2 text-xs text-muted-foreground hover:text-foreground"} onClick={() => setOpen(true)}>
+      <Button type="button" variant="ghost" size={buttonSize} title={buttonText} aria-label={buttonText} className={buttonClassName ?? "h-8 px-2 text-xs text-muted-foreground hover:text-foreground"} onClick={() => setOpen(true)}>
         {icon ? (
           <>
             {icon}
@@ -146,5 +147,4 @@ export function ReportDialog({ targetType, targetId, targetLabel, buttonText = "
     </>
   )
 }
-
 

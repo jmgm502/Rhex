@@ -182,23 +182,23 @@ export function VerificationCenter({ types, approvedVerification }: Verification
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-[32px] border border-border bg-card p-6 shadow-soft">
+    <div className="flex flex-col gap-4 sm:gap-6">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:rounded-[32px] sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Verification Center</p>
-            <h1 className="mt-2 text-3xl font-semibold">账号认证中心</h1>
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">在这里提交个人认证、商家认证或其它认证资料。通过认证后，你还可以继续提交自定义图标和介绍，仍需管理员复审。</p>
+            <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">账号认证中心</h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground sm:leading-7">在这里提交个人认证、商家认证或其它认证资料。通过认证后，你还可以继续提交自定义图标和介绍，仍需管理员复审。</p>
           </div>
           {approvedVerification ? (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+            <div className="w-full rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200 lg:w-auto">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ backgroundColor: `${approvedVerification.color}18`, color: approvedVerification.color }}>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl" style={{ backgroundColor: `${approvedVerification.color}18`, color: approvedVerification.color }}>
                   <LevelIcon icon={approvedVerification.customIconText?.trim() || approvedVerification.iconText} color={approvedVerification.color} className="h-5 w-5 text-[20px]" emojiClassName="text-inherit" svgClassName="[&>svg]:block" />
                 </div>
-                <div>
-                  <p>已通过：<span className="font-medium">{approvedVerification.name}</span></p>
-                  {approvedVerification.customDescription ? <p className="text-emerald-600/90 dark:text-emerald-200/90">{approvedVerification.customDescription}</p> : null}
+                <div className="min-w-0">
+                  <p className="break-words [overflow-wrap:anywhere]">已通过：<span className="font-medium">{approvedVerification.name}</span></p>
+                  {approvedVerification.customDescription ? <p className="break-words text-emerald-600/90 [overflow-wrap:anywhere] dark:text-emerald-200/90">{approvedVerification.customDescription}</p> : null}
                 </div>
               </div>
             </div>
@@ -208,14 +208,14 @@ export function VerificationCenter({ types, approvedVerification }: Verification
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid gap-4 sm:gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
         <section className="space-y-4">
-          <div className="rounded-xl border border-border bg-card p-4">
+          <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <h4 className="text-base font-semibold">可申请认证</h4>
               <span className="text-sm text-muted-foreground">共 {types.length} 项</span>
             </div>
-            <div className="mt-4 space-y-3">
+            <div className="-mx-1 mt-4 flex gap-3 overflow-x-auto px-1 pb-1 xl:mx-0 xl:flex-col xl:overflow-visible xl:px-0 xl:pb-0">
               {types.map((item) => {
                 const isApprovedType = approvedTypeId === item.id
                 const isDisabledItem = hasApprovedVerification && !isApprovedType
@@ -234,15 +234,15 @@ export function VerificationCenter({ types, approvedVerification }: Verification
                       setSelectedTypeId(item.id)
                       resetDraft(item)
                     }}
-                    className={isApprovedType ? "w-full rounded-xl border border-emerald-300 bg-emerald-50/70 p-4 text-left dark:border-emerald-500/30 dark:bg-emerald-500/10" : isActiveItem ? "w-full rounded-xl border border-foreground bg-accent/60 p-4 text-left" : isDisabledItem ? "w-full rounded-xl border border-border bg-background/60 p-4 text-left opacity-55" : "w-full rounded-xl border border-border bg-background p-4 text-left hover:bg-accent/40"}
+                    className={isApprovedType ? "w-72 max-w-[82vw] shrink-0 rounded-xl border border-emerald-300 bg-emerald-50/70 p-4 text-left xl:w-full xl:max-w-none dark:border-emerald-500/30 dark:bg-emerald-500/10" : isActiveItem ? "w-72 max-w-[82vw] shrink-0 rounded-xl border border-foreground bg-accent/60 p-4 text-left xl:w-full xl:max-w-none" : isDisabledItem ? "w-72 max-w-[82vw] shrink-0 rounded-xl border border-border bg-background/60 p-4 text-left opacity-55 xl:w-full xl:max-w-none" : "w-72 max-w-[82vw] shrink-0 rounded-xl border border-border bg-background p-4 text-left hover:bg-accent/40 xl:w-full xl:max-w-none"}
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl" style={{ backgroundColor: `${item.color}18`, color: item.color }}>
                         <LevelIcon icon={item.iconText} color={item.color} className="h-5 w-5 text-[20px]" emojiClassName="text-inherit" svgClassName="[&>svg]:block" />
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="truncate text-sm font-semibold">{item.name}</p>
+                          <p className="break-words text-sm font-semibold [overflow-wrap:anywhere]">{item.name}</p>
                           {isApprovedType ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] text-emerald-700"><CheckCircle2 className="h-3 w-3" />已认证</span> : null}
                           {!isApprovedType ? renderStatusPill(item.currentApplication?.status) : null}
                           {hasReviewTrail ? renderStatusPill(item.currentApplication?.status) : null}
@@ -257,17 +257,17 @@ export function VerificationCenter({ types, approvedVerification }: Verification
           </div>
         </section>
 
-        <section className="space-y-6">
+        <section className="min-w-0 space-y-6">
           {!selectedType ? (
             <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">当前没有可申请的认证类型，请等待管理员配置。</div>
           ) : (
-            <div className="rounded-xl border border-border bg-card p-5 shadow-soft">
-              <div className="flex flex-wrap items-center gap-4">
+            <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card p-4 shadow-soft sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl text-2xl" style={{ backgroundColor: `${selectedType.color}18`, color: selectedType.color }}>
                   <LevelIcon icon={selectedType.iconText} color={selectedType.color} className="h-7 w-7 text-[28px]" emojiClassName="text-inherit" svgClassName="[&>svg]:block" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-semibold">{showCustomizationForm || showApprovedPendingState ? `定制 ${selectedType.name}` : `申请 ${selectedType.name}`}</h2>
+                <div className="min-w-0">
+                  <h2 className="break-words text-lg font-semibold [overflow-wrap:anywhere] sm:text-xl">{showCustomizationForm || showApprovedPendingState ? `定制 ${selectedType.name}` : `申请 ${selectedType.name}`}</h2>
                   <p className="mt-1 text-sm leading-7 text-muted-foreground">{selectedType.description || "请填写你的认证材料，后台会尽快审核。"}</p>
                 </div>
               </div>
@@ -315,8 +315,8 @@ export function VerificationCenter({ types, approvedVerification }: Verification
                   <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-4 text-sm text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
                     你的当前认证仍然有效，新的定制申请正在审核中；审核通过前，前台会继续显示旧的认证样式。
                   </div>
-                  <div className="flex justify-end">
-                    <Button type="button" variant="outline" className="rounded-full" disabled={isUnbinding} onClick={() => void unbindVerification()}>
+                  <div className="flex justify-stretch sm:justify-end">
+                    <Button type="button" variant="outline" className="w-full rounded-full sm:w-auto" disabled={isUnbinding} onClick={() => void unbindVerification()}>
                       {isUnbinding ? "解绑中..." : "解除认证绑定"}
                     </Button>
                   </div>
@@ -329,7 +329,7 @@ export function VerificationCenter({ types, approvedVerification }: Verification
                       : "当前认证继续生效。提交新的自定义图标或介绍后，需等待管理员复审通过才会更新前台展示。"}
                   </div>
 
-                  <label className="space-y-2">
+                  <label className="block min-w-0 space-y-2">
                     <IconPicker
                       label="自定义图标（可选）"
                       value={customIconText}
@@ -339,27 +339,29 @@ export function VerificationCenter({ types, approvedVerification }: Verification
                       description="支持 emoji、站内上传图片路径、远程图片链接和 .svg 文件链接。为了安全，认证图标暂不支持直接粘贴 SVG 源码。"
                       popoverTitle="设置自定义认证图标"
                       textareaRows={3}
+                      containerClassName="min-w-0"
+                      triggerClassName="max-w-full overflow-hidden"
                     />
                   </label>
 
-                  <label className="space-y-2">
+                  <label className="block min-w-0 space-y-2">
                     <span className="text-sm font-medium">个性描述（可选）</span>
                     <input
                       value={customDescription}
                       onChange={(event) => setCustomDescription(event.target.value)}
                       placeholder="例如：独立开发者 / 认证摄影师"
-                      className="h-11 w-full rounded-[18px] border border-border bg-background px-4 text-sm outline-hidden transition-colors focus:border-foreground/30"
+                      className="h-11 w-full min-w-0 max-w-full rounded-[18px] border border-border bg-background px-4 text-sm outline-hidden transition-colors focus:border-foreground/30"
                     />
                     <p className="text-xs leading-6 text-muted-foreground">留空则不展示个性描述。提交时至少要修改一个定制项。</p>
                   </label>
 
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-xs leading-6 text-muted-foreground">定制申请只会修改展示样式，不会影响你当前已通过的认证主体。</p>
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="button" variant="outline" className="rounded-full" disabled={isUnbinding} onClick={() => void unbindVerification()}>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                      <Button type="button" variant="outline" className="w-full rounded-full sm:w-auto" disabled={isUnbinding} onClick={() => void unbindVerification()}>
                         {isUnbinding ? "解绑中..." : "解除认证绑定"}
                       </Button>
-                      <Button type="button" disabled={isPending} onClick={submit} className="rounded-full px-5">
+                      <Button type="button" disabled={isPending} onClick={submit} className="w-full rounded-full px-5 sm:w-auto">
                         {isPending ? "提交中..." : currentApplication?.status === "REJECTED" ? "重新提交定制审核" : "提交定制审核"}
                       </Button>
                     </div>
@@ -370,7 +372,7 @@ export function VerificationCenter({ types, approvedVerification }: Verification
                   {showDynamicFields ? (
                     <div className="grid gap-4">
                       {selectedType.formFields.map((field) => (
-                        <label key={field.id} className="space-y-2">
+                        <label key={field.id} className="block min-w-0 space-y-2">
                           <span className="text-sm font-medium">{field.label}{field.required ? " *" : ""}</span>
                           {field.type === "textarea" ? (
                             <textarea
@@ -378,7 +380,7 @@ export function VerificationCenter({ types, approvedVerification }: Verification
                               onChange={(event) => updateFieldValue(field.id, event.target.value)}
                               rows={5}
                               placeholder={field.placeholder}
-                              className="min-h-[120px] w-full rounded-xl border border-border bg-background px-4 py-3 text-sm leading-7 outline-hidden transition-colors focus:border-foreground/30"
+                              className="min-h-[120px] w-full min-w-0 max-w-full rounded-xl border border-border bg-background px-4 py-3 text-sm leading-7 outline-hidden transition-colors focus:border-foreground/30"
                             />
                           ) : (
                             <input
@@ -386,7 +388,7 @@ export function VerificationCenter({ types, approvedVerification }: Verification
                               value={formValues[field.id] ?? ""}
                               onChange={(event) => updateFieldValue(field.id, event.target.value)}
                               placeholder={field.placeholder}
-                              className="h-11 w-full rounded-[18px] border border-border bg-background px-4 text-sm outline-hidden transition-colors focus:border-foreground/30"
+                              className="h-11 w-full min-w-0 max-w-full rounded-[18px] border border-border bg-background px-4 text-sm outline-hidden transition-colors focus:border-foreground/30"
                             />
                           )}
                           {field.helpText ? <p className="text-xs leading-6 text-muted-foreground">{field.helpText}</p> : null}
@@ -394,19 +396,19 @@ export function VerificationCenter({ types, approvedVerification }: Verification
                       ))}
                     </div>
                   ) : (
-                    <label className="space-y-2">
+                    <label className="block min-w-0 space-y-2">
                       <span className="text-sm font-medium">申请说明</span>
                       <textarea
                         value={content}
                         onChange={(event) => setContent(event.target.value)}
                         rows={8}
                         placeholder={`请填写 ${selectedType.name} 的身份说明、资质链接、联系方式等审核材料`}
-                        className="min-h-[180px] w-full rounded-xl border border-border bg-background px-4 py-3 text-sm leading-7 outline-hidden transition-colors focus:border-foreground/30"
+                        className="min-h-[180px] w-full min-w-0 max-w-full rounded-xl border border-border bg-background px-4 py-3 text-sm leading-7 outline-hidden transition-colors focus:border-foreground/30"
                       />
                     </label>
                   )}
 
-                  <label className="space-y-2">
+                  <label className="block min-w-0 space-y-2">
                     <IconPicker
                       label="自定义图标（可选）"
                       value={customIconText}
@@ -416,23 +418,25 @@ export function VerificationCenter({ types, approvedVerification }: Verification
                       description="可直接上传图片，也可填写远程图片链接、本地上传路径或 .svg 文件链接。为了安全，认证图标暂不支持直接粘贴 SVG 源码。"
                       popoverTitle="设置自定义认证图标"
                       textareaRows={3}
+                      containerClassName="min-w-0"
+                      triggerClassName="max-w-full overflow-hidden"
                     />
                   </label>
 
-                  <label className="space-y-2">
+                  <label className="block min-w-0 space-y-2">
                     <span className="text-sm font-medium">个性描述（可选）</span>
                     <input
                       value={customDescription}
                       onChange={(event) => setCustomDescription(event.target.value)}
                       placeholder="用于前台认证徽章提示展示，例如：独立开发者 / 认证摄影师"
-                      className="h-11 w-full rounded-[18px] border border-border bg-background px-4 text-sm outline-hidden transition-colors focus:border-foreground/30"
+                      className="h-11 w-full min-w-0 max-w-full rounded-[18px] border border-border bg-background px-4 text-sm outline-hidden transition-colors focus:border-foreground/30"
                     />
                     <p className="text-xs leading-6 text-muted-foreground">这条描述会跟随认证图标展示，留空时仅显示认证名称。</p>
                   </label>
 
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-xs leading-6 text-muted-foreground">建议填写真实身份说明、业务介绍、可核验链接或其它辅助材料，便于后台快速审核。</p>
-                    <Button type="button" disabled={isPending || currentApplication?.status === "PENDING"} onClick={submit} className="rounded-full px-5">
+                    <Button type="button" disabled={isPending || currentApplication?.status === "PENDING"} onClick={submit} className="w-full rounded-full px-5 sm:w-auto">
                       {isPending ? "提交中..." : currentApplication?.status === "PENDING" ? "审核中" : currentApplication?.status === "REJECTED" ? "重新提交申请" : "提交申请"}
                     </Button>
                   </div>

@@ -5,6 +5,12 @@ import type { Prisma } from "@/db/types"
 
 export type FeedQuerySort = "latest" | "new" | "hot" | "weekly" | "following"
 
+type FollowFeedFilters = {
+  boardIds?: string[]
+  authorIds?: number[]
+  tagIds?: string[]
+}
+
 const feedPostInclude = {
   board: postListInclude.board,
   author: postListInclude.author,
@@ -81,10 +87,7 @@ function getHotRecentWindowStart(windowHours: number) {
 
 function buildFeedWhere(
   excludedPostIds: string[] = [],
-  filters?: {
-    boardIds?: string[]
-    authorIds?: number[]
-  },
+  filters?: FollowFeedFilters,
 ): Prisma.PostWhereInput {
   const followClauses: Prisma.PostWhereInput[] = []
 
@@ -105,6 +108,18 @@ function buildFeedWhere(
     })
   }
 
+  if (filters?.tagIds?.length) {
+    followClauses.push({
+      tags: {
+        some: {
+          tagId: {
+            in: filters.tagIds,
+          },
+        },
+      },
+    })
+  }
+
   return {
     ...buildHomeVisiblePostWhere(),
     status: "NORMAL",
@@ -116,10 +131,7 @@ function buildFeedWhere(
 function buildRecentHotWhere(
   recentWindowStart: Date,
   excludedPostIds: string[] = [],
-  filters?: {
-    boardIds?: string[]
-    authorIds?: number[]
-  },
+  filters?: FollowFeedFilters,
 ): Prisma.PostWhereInput {
   return {
     ...buildFeedWhere(excludedPostIds, filters),
@@ -132,10 +144,7 @@ function buildRecentHotWhere(
 function buildHistoricalHotWhere(
   recentWindowStart: Date,
   excludedPostIds: string[] = [],
-  filters?: {
-    boardIds?: string[]
-    authorIds?: number[]
-  },
+  filters?: FollowFeedFilters,
 ): Prisma.PostWhereInput {
   return {
     ...buildFeedWhere(excludedPostIds, filters),
@@ -150,10 +159,7 @@ async function findHybridHotFeedPosts(
   pageSize: number,
   hotRecentWindowHours: number,
   excludedPostIds: string[] = [],
-  filters?: {
-    boardIds?: string[]
-    authorIds?: number[]
-  },
+  filters?: FollowFeedFilters,
 ) {
   const normalizedPageSize = Math.min(Math.max(1, pageSize), 50)
   const skip = (page - 1) * normalizedPageSize
@@ -246,10 +252,7 @@ export function findFollowingFeedPosts(
   page: number,
   pageSize: number,
   sort: FeedQuerySort,
-  filters: {
-    boardIds: string[]
-    authorIds: number[]
-  },
+  filters: FollowFeedFilters,
   hotRecentWindowHours = 72,
 ) {
   if (sort === "hot") {
@@ -267,7 +270,7 @@ export function findFollowingFeedPosts(
   })
 }
 
-export function countFollowingFeedPosts(filters: { boardIds: string[]; authorIds: number[] }) {
+export function countFollowingFeedPosts(filters: FollowFeedFilters) {
   return prisma.post.count({
     where: buildFeedWhere([], filters),
   })

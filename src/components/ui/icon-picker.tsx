@@ -113,7 +113,7 @@ export function IconPicker({
   }
 
   return (
-    <div className={cn("space-y-2", containerClassName)}>
+    <div className={cn("min-w-0 space-y-2", containerClassName)}>
       {hideLabel ? null : <p className="text-sm font-medium">{label}</p>}
 
       <Popover open={open} onOpenChange={setOpen}>
@@ -121,7 +121,7 @@ export function IconPicker({
           className={cn(
             triggerMode === "icon"
               ? "flex h-9 w-9 items-center justify-center rounded-2xl border border-border bg-background text-left text-sm transition-colors hover:bg-accent"
-              : "flex h-11 w-full items-center gap-3 rounded-full border border-border bg-background px-4 text-left text-sm transition-colors hover:bg-accent",
+              : "flex h-11 w-full min-w-0 max-w-full items-center gap-3 overflow-hidden rounded-full border border-border bg-background px-4 text-left text-sm transition-colors hover:bg-accent",
             triggerClassName,
           )}
         >

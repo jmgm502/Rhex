@@ -1,8 +1,7 @@
 import Link from "next/link"
-import { ChevronDown, ChevronRight, Eye } from "lucide-react"
+import { ChevronDown, ChevronRight } from "lucide-react"
 
 import { AddonSlotRenderer, AddonSurfaceRenderer } from "@/addons-host"
-import { FollowToggleButton } from "@/components/follow-toggle-button"
 import { PostTypeBadge } from "@/components/post/post-list-shared"
 import { LevelIcon } from "@/components/level-icon"
 import { TimeTooltip } from "@/components/time-tooltip"
@@ -426,63 +425,46 @@ export function PostDetailHeader({
       >
         <header>
           <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[11px] text-muted-foreground sm:text-[12px]">
-              <Link
-                href="/"
-                className="rounded-md px-1 py-0.5 transition-colors hover:bg-accent/60 hover:text-foreground"
-              >
-                首页
-              </Link>
-              <ChevronRight className="h-3.5 w-3.5 opacity-50" />
-              {zone ? (
-                <>
-                  <ZoneBoardsDropdown
-                    zone={zone}
-                    boards={zoneBoards}
-                    activeBoardSlug={post.boardSlug}
+            <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1 gap-y-1 text-[11px] text-muted-foreground sm:text-[12px]">
+                <Link
+                  href="/"
+                  className="rounded-md px-1 py-0.5 transition-colors hover:bg-accent/60 hover:text-foreground"
+                >
+                  首页
+                </Link>
+                <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+                {zone ? (
+                  <>
+                    <ZoneBoardsDropdown
+                      zone={zone}
+                      boards={zoneBoards}
+                      activeBoardSlug={post.boardSlug}
+                    />
+                    <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+                  </>
+                ) : null}
+                <Link
+                  href={boardHref}
+                  className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 transition-colors hover:bg-accent/60 hover:text-foreground"
+                >
+                  <LevelIcon
+                    icon={post.boardIcon}
+                    className="h-3.5 w-3.5 text-sm"
+                    svgClassName="[&>svg]:block"
                   />
-                  <ChevronRight className="h-3.5 w-3.5 opacity-50" />
-                </>
-              ) : null}
-              <Link
-                href={boardHref}
-                className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 transition-colors hover:bg-accent/60 hover:text-foreground"
-              >
-                <LevelIcon
-                  icon={post.boardIcon}
-                  className="h-3.5 w-3.5 text-sm"
-                  svgClassName="[&>svg]:block"
+                  <span>{post.board}</span>
+                </Link>
+                <PostStateBadges
+                  type={post.type}
+                  typeLabel={post.typeLabel}
+                  isPinned={post.isPinned}
+                  isFeatured={post.isFeatured}
                 />
-                <span>{post.board}</span>
-              </Link>
-              <PostStateBadges
-                type={post.type}
-                typeLabel={post.typeLabel}
-                isPinned={post.isPinned}
-                isFeatured={post.isFeatured}
-              />
+              </div>
             </div>
 
-            <div className="relative">
-              <div className="absolute right-0 top-0 flex shrink-0 flex-col items-end gap-1">
-                <FollowToggleButton
-                  targetType="post"
-                  targetId={post.id}
-                  initialFollowed={isFollowingPost}
-                  activeLabel="已关注帖子"
-                  inactiveLabel="关注帖子"
-                  showLabel
-                  className="h-7 rounded-full px-2.5 text-[11px] sm:h-8 sm:px-3 sm:text-xs"
-                />
-                <span className="inline-flex h-7 items-center gap-1 rounded-full bg-secondary/70 px-2.5 text-[11px] text-muted-foreground sm:h-8 sm:px-3 sm:text-xs">
-                  <Eye className="h-3.5 w-3.5" />
-                  {post.stats.views}
-                </span>
-              </div>
-              <div className="min-w-0 pr-[104px] sm:pr-[112px]">
-                <h1 className={getTitleClassName(post)}>{post.title}</h1>
-              </div>
-            </div>
+            <h1 className={getTitleClassName(post)}>{post.title}</h1>
 
             <PostAuthorRowContent {...extensionProps} pathname={pathname} />
           </div>

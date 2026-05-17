@@ -10,6 +10,7 @@ import { BuiltinCaptchaField } from "@/components/auth/builtin-captcha-field"
 import { ExternalAuthEntry } from "@/components/auth/external-auth-entry"
 import { PowCaptchaField } from "@/components/auth/pow-captcha-field"
 import { TurnstileCaptchaField } from "@/components/auth/turnstile-captcha-field"
+import { useCurrentUser } from "@/components/current-user-provider"
 import { Button } from "@/components/ui/button"
 import {
   InputGroup,
@@ -37,6 +38,7 @@ export function LoginForm({
   addonExternalAuthEntries = [],
 }: LoginFormProps) {
   const router = useRouter()
+  const { refresh: refreshCurrentUser } = useCurrentUser()
   const [login, setLogin] = useState("")
   const [password, setPassword] = useState("")
   const [captchaToken, setCaptchaToken] = useState("")
@@ -107,7 +109,8 @@ export function LoginForm({
     const successMessage = "登录成功，正在跳转到首页…"
     //setMessage(successMessage)
     toast.success(successMessage, "登录成功")
-    router.push("/")
+    await refreshCurrentUser()
+    router.replace("/")
     router.refresh()
     setLoading(false)
   }

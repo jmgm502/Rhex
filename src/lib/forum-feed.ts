@@ -244,9 +244,9 @@ export async function getLatestFeed(
       }
     }
 
-    const { boardIds, authorIds } = await findFollowFeedTargetIds(currentUserId)
+    const { boardIds, authorIds, tagIds } = await findFollowFeedTargetIds(currentUserId)
 
-    if (boardIds.length === 0 && authorIds.length === 0) {
+    if (boardIds.length === 0 && authorIds.length === 0 && tagIds.length === 0) {
       return {
         items: [],
         page: 1,
@@ -261,13 +261,13 @@ export async function getLatestFeed(
     const requestedPagination = resolvePagination({ page, pageSize }, Number.MAX_SAFE_INTEGER, [pageSize], pageSize)
     const [anonymousMaskIdentity, total, requestedPosts] = await Promise.all([
       getAnonymousMaskDisplayIdentity(),
-      countFollowingFeedPosts({ boardIds, authorIds }),
-      findFollowingFeedPosts(requestedPagination.page, requestedPagination.pageSize, sort, { boardIds, authorIds }, hotRecentWindowHours),
+      countFollowingFeedPosts({ boardIds, authorIds, tagIds }),
+      findFollowingFeedPosts(requestedPagination.page, requestedPagination.pageSize, sort, { boardIds, authorIds, tagIds }, hotRecentWindowHours),
     ])
     const pagination = resolvePagination({ page, pageSize }, total, [pageSize], pageSize)
     const posts = pagination.page === requestedPagination.page
       ? requestedPosts
-      : await findFollowingFeedPosts(pagination.page, pagination.pageSize, sort, { boardIds, authorIds }, hotRecentWindowHours)
+      : await findFollowingFeedPosts(pagination.page, pagination.pageSize, sort, { boardIds, authorIds, tagIds }, hotRecentWindowHours)
 
     return {
       items: posts.map((post) => mapFeedPost(post, anonymousMaskIdentity)),

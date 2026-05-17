@@ -158,7 +158,7 @@ export function BadgeCenter({ badges, isLoggedIn }: BadgeCenterProps) {
       {!isLoggedIn ? <div className="rounded-xl border border-dashed border-border bg-card p-6 text-sm text-muted-foreground">登录后可以查看自己哪些勋章已达成，并手动领取。</div> : null}
       {feedback ? <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">{feedback}</div> : null}
 
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {filteredItems.map((badge) => {
           const statusLabel = badge.eligibility.alreadyGranted ? "已领取" : badge.eligibility.eligible ? "可领取" : "未达成"
           const claimButtonLabel = badge.eligibility.alreadyGranted
@@ -180,15 +180,15 @@ export function BadgeCenter({ badges, isLoggedIn }: BadgeCenterProps) {
           return (
             <div key={badge.id} className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-soft">
               <div className="p-4" style={{ background: `linear-gradient(135deg, ${badge.color}22 0%, transparent 100%)` }}>
-                <div className="flex items-start justify-between gap-2.5">
-                  <Link href={`/badges/${badge.code}`} className="flex min-w-0 items-center gap-2.5">
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
+                  <Link href={`/badges/${badge.code}`} className="flex min-w-0 flex-1 items-center gap-2.5">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] text-2xl" style={{ color: badge.color, backgroundColor: `${badge.color}14` }}>
                       <LevelIcon icon={badge.iconText} color={badge.color} className="h-5.5 w-5.5 text-[22px]" emojiClassName="text-inherit" svgClassName="[&>svg]:block" />
                     </div>
 
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="truncate text-[11px] leading-4 text-muted-foreground">{badge.category || "社区成就"}</p>
-                      <h2 className="mt-0.5 line-clamp-1 text-base font-semibold leading-5">{badge.name}</h2>
+                      <h2 className="mt-0.5 break-words text-base font-semibold leading-5 [overflow-wrap:anywhere]">{badge.name}</h2>
                     </div>
                   </Link>
                   <span className={badge.eligibility.alreadyGranted ? "shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] text-emerald-700" : badge.eligibility.eligible ? "shrink-0 whitespace-nowrap rounded-full bg-orange-100 px-2 py-0.5 text-[11px] text-orange-700" : "shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600"}>{statusLabel}</span>

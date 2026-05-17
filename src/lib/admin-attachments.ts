@@ -221,12 +221,29 @@ function matchExactPath(value: string | null | undefined, uploadIdsByUrlPath: Ma
   return uploadIdsByUrlPath.get(value) ?? []
 }
 
-function matchContainedPaths(value: string | null | undefined, rows: UploadListRow[]) {
-  if (!value) {
+function stringifyReferenceValue(value: unknown) {
+  if (value === null || value === undefined) {
+    return ""
+  }
+
+  if (typeof value === "string") {
+    return value
+  }
+
+  try {
+    return JSON.stringify(value) ?? ""
+  } catch {
+    return ""
+  }
+}
+
+function matchContainedPaths(value: unknown, rows: UploadListRow[]) {
+  const referenceValue = stringifyReferenceValue(value)
+  if (!referenceValue) {
     return []
   }
 
-  return rows.filter((row) => value.includes(row.urlPath) || value.includes(row.id)).map((row) => row.id)
+  return rows.filter((row) => referenceValue.includes(row.urlPath) || referenceValue.includes(row.id)).map((row) => row.id)
 }
 
 function buildContainsOr(rows: UploadListRow[], field: string) {
@@ -252,6 +269,7 @@ export async function resolveUploadReferenceStates(rows: UploadListRow[]) {
 
   const [
     users,
+    zones,
     boards,
     posts,
     appendices,
@@ -262,10 +280,22 @@ export async function resolveUploadReferenceStates(rows: UploadListRow[]) {
     siteSettings,
     rssSources,
     announcements,
+    customPages,
     boardApplications,
+    postAuctions,
+    levelDefinitions,
+    verificationTypes,
+    userVerifications,
+    selfServeAdOrders,
+    giftDefinitions,
+    addonConfigs,
   ] = await Promise.all([
-    prisma.user.findMany({ where: { avatarPath: { in: urlPaths } }, select: { avatarPath: true } }),
-    prisma.board.findMany({ where: { OR: [{ iconPath: { in: urlPaths } }, { coverPath: { in: urlPaths } }] }, select: { iconPath: true, coverPath: true } }),
+    prisma.user.findMany({
+      where: { OR: [{ avatarPath: { in: urlPaths } }, ...buildContainsOr(rows, "bio"), ...buildContainsOr(rows, "signature")] },
+      select: { avatarPath: true, bio: true, signature: true },
+    }),
+    prisma.zone.findMany({ where: { OR: buildContainsOr(rows, "icon") }, select: { icon: true } }),
+    prisma.board.findMany({ select: { iconPath: true, coverPath: true, configJson: true } }),
     prisma.post.findMany({
       where: { OR: [{ coverPath: { in: urlPaths } }, ...buildContainsOr(rows, "content"), ...buildContainsOr(rows, "appendedContent")] },
       select: { coverPath: true, content: true, appendedContent: true },
@@ -274,7 +304,10 @@ export async function resolveUploadReferenceStates(rows: UploadListRow[]) {
     prisma.comment.findMany({ where: { OR: buildContainsOr(rows, "content") }, select: { content: true } }),
     prisma.directMessage.findMany({ where: { OR: buildContainsOr(rows, "body") }, select: { body: true } }),
     prisma.friendLink.findMany({ where: { logoPath: { in: urlPaths } }, select: { logoPath: true } }),
-    prisma.badge.findMany({ where: { OR: [{ iconPath: { in: urlPaths } }, { imageUrl: { in: urlPaths } }] }, select: { iconPath: true, imageUrl: true } }),
+    prisma.badge.findMany({
+      where: { OR: [{ iconPath: { in: urlPaths } }, { imageUrl: { in: urlPaths } }, ...buildContainsOr(rows, "iconText"), ...buildContainsOr(rows, "imageUrl")] },
+      select: { iconPath: true, iconText: true, imageUrl: true },
+    }),
     prisma.siteSetting.findMany({
       where: {
         OR: [
@@ -292,15 +325,35 @@ export async function resolveUploadReferenceStates(rows: UploadListRow[]) {
       where: { OR: [...buildContainsOr(rows, "content"), { linkUrl: { in: urlPaths } }] },
       select: { content: true, linkUrl: true },
     }),
+    prisma.customPage.findMany({ where: { OR: buildContainsOr(rows, "htmlContent") }, select: { htmlContent: true } }),
     prisma.boardApplication.findMany({ where: { OR: [{ icon: { in: urlPaths } }, ...buildContainsOr(rows, "icon")] }, select: { icon: true } }),
+    prisma.postAuction.findMany({
+      where: { OR: [...buildContainsOr(rows, "winnerOnlyContent"), ...buildContainsOr(rows, "winnerOnlyContentPreview")] },
+      select: { winnerOnlyContent: true, winnerOnlyContentPreview: true },
+    }),
+    prisma.levelDefinition.findMany({ where: { OR: buildContainsOr(rows, "icon") }, select: { icon: true } }),
+    prisma.verificationType.findMany({ where: { OR: buildContainsOr(rows, "iconText") }, select: { iconText: true } }),
+    prisma.userVerification.findMany({
+      where: { OR: [...buildContainsOr(rows, "customIconText"), ...buildContainsOr(rows, "content"), ...buildContainsOr(rows, "formResponseJson")] },
+      select: { customIconText: true, content: true, formResponseJson: true },
+    }),
+    prisma.selfServeAdOrder.findMany({ where: { OR: buildContainsOr(rows, "imageUrl") }, select: { imageUrl: true } }),
+    prisma.giftDefinition.findMany({ where: { OR: buildContainsOr(rows, "icon") }, select: { icon: true } }),
+    prisma.addonConfig.findMany({ select: { valueJson: true } }),
   ])
 
   for (const item of users) {
     addReference(states, matchExactPath(item.avatarPath, uploadIdsByUrlPath), "用户头像")
+    addReference(states, matchContainedPaths(item.bio, rows), "用户简介")
+    addReference(states, matchContainedPaths(item.signature, rows), "用户介绍")
+  }
+  for (const item of zones) {
+    addReference(states, matchContainedPaths(item.icon, rows), "分区图标")
   }
   for (const item of boards) {
     addReference(states, matchExactPath(item.iconPath, uploadIdsByUrlPath), "节点图标")
     addReference(states, matchExactPath(item.coverPath, uploadIdsByUrlPath), "节点封面")
+    addReference(states, matchContainedPaths(item.configJson, rows), "节点配置")
   }
   for (const item of posts) {
     addReference(states, matchExactPath(item.coverPath, uploadIdsByUrlPath), "帖子封面")
@@ -321,7 +374,9 @@ export async function resolveUploadReferenceStates(rows: UploadListRow[]) {
   }
   for (const item of badges) {
     addReference(states, matchExactPath(item.iconPath, uploadIdsByUrlPath), "勋章图标")
+    addReference(states, matchContainedPaths(item.iconText, rows), "勋章图标")
     addReference(states, matchExactPath(item.imageUrl, uploadIdsByUrlPath), "勋章图片")
+    addReference(states, matchContainedPaths(item.imageUrl, rows), "勋章图片")
   }
   for (const item of siteSettings) {
     addReference(states, matchExactPath(item.siteLogoPath, uploadIdsByUrlPath), "站点 Logo")
@@ -337,9 +392,36 @@ export async function resolveUploadReferenceStates(rows: UploadListRow[]) {
     addReference(states, matchContainedPaths(item.content, rows), "站点文档")
     addReference(states, matchExactPath(item.linkUrl, uploadIdsByUrlPath), "站点文档链接")
   }
+  for (const item of customPages) {
+    addReference(states, matchContainedPaths(item.htmlContent, rows), "自定义页面")
+  }
   for (const item of boardApplications) {
     addReference(states, matchExactPath(item.icon, uploadIdsByUrlPath), "节点申请")
     addReference(states, matchContainedPaths(item.icon, rows), "节点申请")
+  }
+  for (const item of postAuctions) {
+    addReference(states, matchContainedPaths(item.winnerOnlyContent, rows), "拍卖赢家内容")
+    addReference(states, matchContainedPaths(item.winnerOnlyContentPreview, rows), "拍卖赢家内容")
+  }
+  for (const item of levelDefinitions) {
+    addReference(states, matchContainedPaths(item.icon, rows), "等级图标")
+  }
+  for (const item of verificationTypes) {
+    addReference(states, matchContainedPaths(item.iconText, rows), "认证类型图标")
+  }
+  for (const item of userVerifications) {
+    addReference(states, matchContainedPaths(item.customIconText, rows), "用户认证图标")
+    addReference(states, matchContainedPaths(item.content, rows), "用户认证材料")
+    addReference(states, matchContainedPaths(item.formResponseJson, rows), "用户认证材料")
+  }
+  for (const item of selfServeAdOrders) {
+    addReference(states, matchContainedPaths(item.imageUrl, rows), "自助广告图片")
+  }
+  for (const item of giftDefinitions) {
+    addReference(states, matchContainedPaths(item.icon, rows), "礼物图标")
+  }
+  for (const item of addonConfigs) {
+    addReference(states, matchContainedPaths(item.valueJson, rows), "插件配置")
   }
 
   return states

@@ -575,8 +575,8 @@ export function AdminProfileSettingsForm({
                 value={draft.footerCopyrightText}
                 onChange={(value) =>
                   updateDraftField("footerCopyrightText", value)}
-                placeholder="如 兴趣论坛 2026"
-                description="例如公司名、品牌名、备案提示或年度版权说明。"
+                placeholder={'如 兴趣论坛 2026 · <a href="https://beian.miit.gov.cn/">ICP备案号</a>'}
+                description="例如公司名、品牌名、备案提示或年度版权说明；支持安全的 a 标签超链接。"
               />
               <SettingsToggleField
                 label="显示版权附加信息"
