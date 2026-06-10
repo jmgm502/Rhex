@@ -12,9 +12,10 @@ import { cn } from "@/lib/utils"
 interface HelpDocumentPageContentProps {
   items: SiteDocumentItem[]
   activeItem: SiteDocumentItem | null
+  activeItemHtml?: string
 }
 
-export function HelpDocumentPageContent({ items, activeItem }: HelpDocumentPageContentProps) {
+export function HelpDocumentPageContent({ items, activeItem, activeItemHtml }: HelpDocumentPageContentProps) {
   const [navOpen, setNavOpen] = useState(true)
 
   return (
@@ -93,7 +94,7 @@ export function HelpDocumentPageContent({ items, activeItem }: HelpDocumentPageC
                 <h2 style={{ color: activeItem.titleColor ?? undefined }} className={activeItem.titleBold ? "text-2xl font-semibold" : "text-2xl font-medium"}>
                   {activeItem.title}
                 </h2>
-                <MarkdownContent content={activeItem.content} emptyText="暂无帮助文档正文" className="markdown-body mt-4 max-w-none flex-1 text-sm prose prose-sm prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1" />
+                <MarkdownContent content={activeItem.content} html={activeItemHtml} emptyText="暂无帮助文档正文" className="markdown-body mt-4 max-w-none flex-1 text-sm prose prose-sm prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1" />
                 <div className="mt-6 border-t border-border pt-3 text-xs text-muted-foreground">
                   更新时间 {activeItem.publishedAtText}
                 </div>

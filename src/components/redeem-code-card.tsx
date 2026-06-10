@@ -7,7 +7,7 @@ import { useState, useTransition } from "react"
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
-import { formatNumber } from "@/lib/formatters"
+import { formatCompactPointValue } from "@/lib/formatters"
 
 const REDEEM_PRIMARY_BUTTON_CLASS = "h-11 rounded-2xl bg-foreground px-5 text-background hover:bg-foreground/90"
 const REDEEM_INPUT_GROUP_CLASS = "h-11 rounded-2xl bg-background/80"
@@ -50,7 +50,7 @@ export function RedeemCodeCard({ pointName, currentPoints, helpLinkEnabled = fal
         <p className="text-sm text-muted-foreground">输入兑换码即可领取 {pointName}。兑换成功后请刷新当前页面查看最新余额与明细。</p>
       </div>
       <div className="mt-4 rounded-xl bg-secondary/40 p-4 text-sm text-muted-foreground">
-        当前账户余额：<span className="font-semibold text-foreground">{formatNumber(displayPoints)}</span> {pointName}
+        当前账户余额：<span className="font-semibold text-foreground">{formatCompactPointValue(displayPoints)}</span> {pointName}
       </div>
       <form
         className="mt-4 flex flex-col gap-3 sm:flex-row"

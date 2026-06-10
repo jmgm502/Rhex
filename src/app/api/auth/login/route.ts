@@ -9,17 +9,16 @@ import { validateLoginWithAddonProviders } from "@/lib/addon-auth-providers"
 import { apiError, createRouteHandler, apiSuccess, readJsonBody, readOptionalStringField } from "@/lib/api-route"
 import { maybeEnqueueLoginIpChangeAlert } from "@/lib/account-security"
 import { verifyLoginCaptchaWithAddonProviders } from "@/lib/addon-captcha-providers"
+import { verifySmsVerificationCodeWithAddonProviders } from "@/lib/addon-sms-verification"
 import { verifyBuiltinCaptchaToken } from "@/lib/builtin-captcha"
 import { verifyPowCaptchaSolution } from "@/lib/pow-captcha"
 import { getRequestIp } from "@/lib/request-ip"
 import { logRouteWriteSuccess } from "@/lib/route-metadata"
 import { createSessionToken, getSessionCookieName, getSessionCookieOptions } from "@/lib/session"
 import { getServerSiteSettings } from "@/lib/site-settings"
-import { VerificationChannel } from "@/lib/shared/verification-channel"
 import { canSendSms } from "@/lib/sms"
 import { verifyTurnstileToken } from "@/lib/turnstile"
 import { validateLoginPayload } from "@/lib/validators"
-import { verifyCode } from "@/lib/verification"
 import { createRequestWriteGuardOptions } from "@/lib/write-guard-policies"
 import { withRequestWriteGuard } from "@/lib/write-guard"
 import { executeAddonActionHook } from "@/addons-host/runtime/hooks"
@@ -127,11 +126,12 @@ export const POST = createRouteHandler(async ({ request }) => {
         apiError(403, "该手机号尚未完成绑定验证")
       }
 
-      await verifyCode({
-        channel: VerificationChannel.PHONE,
-        target: login,
+      await verifySmsVerificationCodeWithAddonProviders({
+        request,
+        phone: login,
         code: phoneCode,
         purpose: "login",
+        userId: user.id,
       })
 
       await validateLoginWithAddonProviders({

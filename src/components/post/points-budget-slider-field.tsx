@@ -1,5 +1,7 @@
 "use client"
 
+import { formatCompactPointValue } from "@/lib/formatters"
+
 interface PointsBudgetSliderFieldProps {
   label: string
   pointName: string
@@ -48,22 +50,22 @@ export function PointsBudgetSliderField({
           <p className="text-xs font-medium text-foreground">{label}</p>
         </div>
         <div className="inline-flex min-w-[78px] items-center justify-center rounded-full border border-border bg-secondary px-3 py-1 text-[11px] font-semibold text-foreground">
-          {rangeValue} {pointName}
+          {formatCompactPointValue(rangeValue)} {pointName}
         </div>
       </div>
 
       <div className="grid gap-1.5 sm:grid-cols-3">
         <div className="rounded-[10px] bg-secondary/60 px-2.5 py-2">
           <p className="text-[10px] text-muted-foreground">当前余额</p>
-          <p className="mt-0.5 text-[11px] font-semibold">{currentBalance}</p>
+          <p className="mt-0.5 text-[11px] font-semibold">{formatCompactPointValue(currentBalance)}</p>
         </div>
         <div className="rounded-[10px] bg-secondary/60 px-2.5 py-2">
           <p className="text-[10px] text-muted-foreground">本次消耗</p>
-          <p className="mt-0.5 text-[11px] font-semibold">{normalizedCost}</p>
+          <p className="mt-0.5 text-[11px] font-semibold">{formatCompactPointValue(normalizedCost)}</p>
         </div>
         <div className={insufficient ? "rounded-[10px] bg-red-50 px-2.5 py-2 text-red-700" : "rounded-[10px] bg-secondary/60 px-2.5 py-2"}>
           <p className="text-[10px] text-muted-foreground">发布后余额</p>
-          <p className="mt-0.5 text-[11px] font-semibold">{afterBalance}</p>
+          <p className="mt-0.5 text-[11px] font-semibold">{formatCompactPointValue(afterBalance)}</p>
         </div>
       </div>
 
@@ -80,8 +82,8 @@ export function PointsBudgetSliderField({
             className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-border accent-foreground disabled:cursor-not-allowed"
           />
           <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>{normalizedMin}</span>
-            <span>{normalizedMax}</span>
+            <span>{formatCompactPointValue(normalizedMin)}</span>
+            <span>{formatCompactPointValue(normalizedMax)}</span>
           </div>
         </div>
         <input

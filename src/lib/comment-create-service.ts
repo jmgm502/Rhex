@@ -86,7 +86,7 @@ export async function createCommentFlow(input: {
     })
   }
 
-  const permission = checkBoardPermission(dbUser, postContext.settings, "reply")
+  const permission = checkBoardPermission(dbUser, postContext.settings, "reply", settings.pointName)
   if (!permission.allowed) {
     apiError(403, permission.message || "当前没有回复权限")
   }

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { Plus, Trash2 } from "lucide-react"
 
+import { AdminClientPaginationBar } from "@/components/admin/admin-pagination-bar"
 import { useConfirm } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/rbutton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -739,6 +740,14 @@ export function AiReplyAdminPage({ initialData }: AiReplyAdminPageProps) {
                   <span className={`inline-flex rounded-full border px-2.5 py-1 font-medium ${TASK_STATUS_CLASS_NAMES.CANCELLED}`}>取消 {data.autoCategorizeSummary.cancelled}</span>
                 </div>
               </div>
+              {data.autoCategorizeRecentTasksPagination.totalPages > 1 ? (
+                <AdminClientPaginationBar
+                  pagination={data.autoCategorizeRecentTasksPagination}
+                  itemLabel="条任务日志"
+                  loading={isTaskListLoading}
+                  onPageChange={(page) => void loadTaskPage("auto-categorize", page)}
+                />
+              ) : null}
 
               {data.autoCategorizeRecentTasks.length > 0 ? data.autoCategorizeRecentTasks.map((task) => (
                 <div key={task.id} className="rounded-xl border border-border p-4">
@@ -768,34 +777,13 @@ export function AiReplyAdminPage({ initialData }: AiReplyAdminPageProps) {
               )}
 
               {data.autoCategorizeRecentTasksPagination.totalPages > 1 ? (
-                <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    第 {data.autoCategorizeRecentTasksPagination.page} / {data.autoCategorizeRecentTasksPagination.totalPages} 页，每页 {data.autoCategorizeRecentTasksPagination.pageSize} 条
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={!data.autoCategorizeRecentTasksPagination.hasPrevPage || isTaskListLoading}
-                      onClick={() => void loadTaskPage("auto-categorize", data.autoCategorizeRecentTasksPagination.page - 1)}
-                    >
-                      上一页
-                    </Button>
-                    <span className="inline-flex h-8 min-w-10 items-center justify-center rounded-full border border-border bg-muted px-3 text-sm font-medium">
-                      {data.autoCategorizeRecentTasksPagination.page}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={!data.autoCategorizeRecentTasksPagination.hasNextPage || isTaskListLoading}
-                      onClick={() => void loadTaskPage("auto-categorize", data.autoCategorizeRecentTasksPagination.page + 1)}
-                    >
-                      下一页
-                    </Button>
-                  </div>
-                </div>
+                <AdminClientPaginationBar
+                  pagination={data.autoCategorizeRecentTasksPagination}
+                  itemLabel="条任务日志"
+                  loading={isTaskListLoading}
+                  className="border-t border-border pt-4"
+                  onPageChange={(page) => void loadTaskPage("auto-categorize", page)}
+                />
               ) : null}
             </TabsContent>
 
@@ -812,6 +800,14 @@ export function AiReplyAdminPage({ initialData }: AiReplyAdminPageProps) {
                   <span className={`inline-flex rounded-full border px-2.5 py-1 font-medium ${TASK_STATUS_CLASS_NAMES.CANCELLED}`}>取消 {data.summary.cancelled}</span>
                 </div>
               </div>
+              {data.recentTasksPagination.totalPages > 1 ? (
+                <AdminClientPaginationBar
+                  pagination={data.recentTasksPagination}
+                  itemLabel="条任务日志"
+                  loading={isTaskListLoading}
+                  onPageChange={(page) => void loadTaskPage("ai-reply", page)}
+                />
+              ) : null}
 
               {data.recentTasks.length > 0 ? data.recentTasks.map((task) => (
                 <div key={task.id} className="rounded-xl border border-border p-4">
@@ -851,34 +847,13 @@ export function AiReplyAdminPage({ initialData }: AiReplyAdminPageProps) {
               )}
 
               {data.recentTasksPagination.totalPages > 1 ? (
-                <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    第 {data.recentTasksPagination.page} / {data.recentTasksPagination.totalPages} 页，每页 {data.recentTasksPagination.pageSize} 条
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={!data.recentTasksPagination.hasPrevPage || isTaskListLoading}
-                      onClick={() => void loadTaskPage("ai-reply", data.recentTasksPagination.page - 1)}
-                    >
-                      上一页
-                    </Button>
-                    <span className="inline-flex h-8 min-w-10 items-center justify-center rounded-full border border-border bg-muted px-3 text-sm font-medium">
-                      {data.recentTasksPagination.page}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={!data.recentTasksPagination.hasNextPage || isTaskListLoading}
-                      onClick={() => void loadTaskPage("ai-reply", data.recentTasksPagination.page + 1)}
-                    >
-                      下一页
-                    </Button>
-                  </div>
-                </div>
+                <AdminClientPaginationBar
+                  pagination={data.recentTasksPagination}
+                  itemLabel="条任务日志"
+                  loading={isTaskListLoading}
+                  className="border-t border-border pt-4"
+                  onPageChange={(page) => void loadTaskPage("ai-reply", page)}
+                />
               ) : null}
             </TabsContent>
           </Tabs>

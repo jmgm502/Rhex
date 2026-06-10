@@ -1,9 +1,12 @@
-import { randomUUID } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 
-import { TaskDefinitionStatus, PostType, TaskRewardTier, type TaskDefinition } from "@/db/types"
+import { Prisma, TaskDefinitionStatus, PostType, TaskRewardTier, type TaskDefinition } from "@/db/types"
 import {
   createTaskDefinitionRecord,
+  deleteTaskDefinitionRecordById,
   findAdminTaskDefinitions,
+  findRecentMatchingTaskDefinition,
+  findTaskDefinitionByCode,
   findTaskDefinitionById,
   updateTaskDefinitionRecordById,
 } from "@/db/task-definition-queries"
@@ -18,6 +21,29 @@ import { formatTaskRewardRange } from "@/lib/task-reward"
 
 function buildTaskCode() {
   return `task_${randomUUID().replace(/-/g, "").slice(0, 16)}`
+}
+
+function buildTaskCodeFromRequestId(userId: number, requestId: string) {
+  const hash = createHash("sha256")
+    .update(`admin-task:${userId}:${requestId}`)
+    .digest("hex")
+    .slice(0, 24)
+  return `task_req_${hash}`
+}
+
+function readCreateRequestId(raw: unknown) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return ""
+  }
+
+  const requestId = (raw as Record<string, unknown>).requestId
+  return typeof requestId === "string" && requestId.trim().length >= 8
+    ? requestId.trim().slice(0, 128)
+    : ""
+}
+
+function isTaskCodeUniqueError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002"
 }
 
 function formatOptionalDate(value: Date | null) {
@@ -65,9 +91,9 @@ function mapTaskDefinition(item: TaskDefinition): TaskDefinitionView {
   }
 }
 
-function buildCreatePayload(input: TaskDefinitionInput, userId: number) {
+function buildCreatePayload(input: TaskDefinitionInput, userId: number, code = buildTaskCode()) {
   return {
-    code: buildTaskCode(),
+    code,
     title: input.title,
     description: input.description || null,
     category: input.category,
@@ -165,7 +191,12 @@ export async function saveAdminTaskDefinition(raw: unknown) {
     apiError(404, "任务不存在")
   }
 
-  const payload = buildCreatePayload(input, admin.id)
+  const createRequestId = input.id ? "" : readCreateRequestId(raw)
+  const payload = buildCreatePayload(
+    input,
+    admin.id,
+    createRequestId ? buildTaskCodeFromRequestId(admin.id, createRequestId) : buildTaskCode(),
+  )
   if (existing) {
     const updated = await updateTaskDefinitionRecordById(existing.id, {
       ...payload,
@@ -176,7 +207,28 @@ export async function saveAdminTaskDefinition(raw: unknown) {
     return mapAdminTaskItem(updated)
   }
 
-  return mapAdminTaskItem(await createTaskDefinitionRecord(payload))
+  const recentDuplicate = await findRecentMatchingTaskDefinition({
+    ...payload,
+    conditionConfigJson: payload.conditionConfigJson,
+    createdById: admin.id,
+    createdAfter: new Date(Date.now() - 10_000),
+  })
+  if (recentDuplicate) {
+    return mapAdminTaskItem(recentDuplicate)
+  }
+
+  try {
+    return mapAdminTaskItem(await createTaskDefinitionRecord(payload))
+  } catch (error) {
+    if (isTaskCodeUniqueError(error)) {
+      const existingByCode = await findTaskDefinitionByCode(payload.code)
+      if (existingByCode) {
+        return mapAdminTaskItem(existingByCode)
+      }
+    }
+
+    throw error
+  }
 }
 
 export async function updateAdminTaskStatus(id: string, status: string) {
@@ -237,4 +289,19 @@ export async function duplicateAdminTaskDefinition(id: string) {
     createdById: admin.id,
     updatedById: admin.id,
   }))
+}
+
+export async function deleteAdminTaskDefinition(id: string) {
+  const admin = await requireAdminUser()
+  if (!admin) {
+    apiError(403, "无权删除任务")
+  }
+
+  const existing = await findTaskDefinitionById(id)
+  if (!existing) {
+    apiError(404, "任务不存在")
+  }
+
+  await deleteTaskDefinitionRecordById(id)
+  return { id }
 }

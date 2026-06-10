@@ -63,7 +63,7 @@ export const GET = createRouteHandler(async ({ request, routeContext }) => {
     requirePostReview: board.requirePostReview ?? false,
     requireCommentReview: board.requireCommentReview ?? false,
     showInHomeFeed: true,
-  }, "view")
+  }, "view", settings.pointName)
 
   if (!permission.allowed) {
     apiError(403, permission.message || "当前没有访问权限")

@@ -9,7 +9,7 @@ import {
   readBrowsingPreferencesSnapshot,
   subscribeBrowsingPreferences,
 } from "@/lib/browsing-preferences"
-import { formatCompactNumber, formatNumber } from "@/lib/formatters"
+import { formatCompactNumber, formatCompactPointValue } from "@/lib/formatters"
 import type { PostRedPacketSummary } from "@/lib/post-red-packets"
 import { cn } from "@/lib/utils"
 
@@ -86,7 +86,7 @@ export function PostRewardPoolIntroAnimation({ postId, summary }: PostRewardPool
     if (summary.rewardMode === "JACKPOT") {
       return {
         title: "聚宝盆已开启",
-        value: `${formatNumber(summary.remainingPoints)} ${summary.pointName}`,
+        value: `${formatCompactPointValue(summary.remainingPoints)} ${summary.pointName}`,
         description: "盆里当前积分",
       }
     }

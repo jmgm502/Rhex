@@ -129,11 +129,15 @@ type BoardPermissionUser = {
   approvedVerificationTypeIds?: string[] | null
 }
 
+function resolvePointName(pointName?: string | null) {
+  return typeof pointName === "string" && pointName.trim() ? pointName.trim() : "积分"
+}
+
 function isStaffUser(user: Pick<BoardPermissionUser, "role"> | null) {
   return user?.role === "ADMIN" || user?.role === "MODERATOR"
 }
 
-export function canUserAccess(user: BoardPermissionUser | null, settings: EffectiveBoardSettings, action: "view" | "post" | "reply") {
+export function canUserAccess(user: BoardPermissionUser | null, settings: EffectiveBoardSettings, action: "view" | "post" | "reply", pointName?: string | null) {
   if (action === "post" && !settings.allowUserPost && !isStaffUser(user)) {
     return { allowed: false, message: "当前仅管理员和版主可发帖" }
   }
@@ -146,6 +150,7 @@ export function canUserAccess(user: BoardPermissionUser | null, settings: Effect
   const minLevel = action === "view" ? settings.minViewLevel : action === "post" ? settings.minPostLevel : settings.minReplyLevel
   const minVipLevel = action === "view" ? settings.minViewVipLevel : action === "post" ? settings.minPostVipLevel : settings.minReplyVipLevel
   const currentVipLevel = isVipActive(user) ? (user?.vipLevel ?? 0) : 0
+  const normalizedPointName = resolvePointName(pointName)
 
   if (minVipLevel > 0 && currentVipLevel < minVipLevel) {
 
@@ -153,7 +158,7 @@ export function canUserAccess(user: BoardPermissionUser | null, settings: Effect
   }
 
   if ((user?.points ?? 0) < minPoints) {
-    return { allowed: false, message: `当前需要至少 ${minPoints} 点` }
+    return { allowed: false, message: `当前需要至少 ${minPoints} ${normalizedPointName}` }
   }
 
 

@@ -250,6 +250,7 @@ function mapSiteSettings(record: SiteSettingsRecordData, tippingGifts: SiteTippi
   const userProfileDisplaySettings = resolveUserProfileDisplaySettings({
     appStateJson: record.appStateJson,
     ipLocationEnabledFallback: false,
+    introductionEnabledFallback: true,
   })
   const themeSettings = buildThemeRuntimeSettings(resolveThemeCustomizationSettingsFromAppState({
     appStateJson: record.appStateJson,
@@ -432,7 +433,7 @@ function mapSiteSettings(record: SiteSettingsRecordData, tippingGifts: SiteTippi
     siteLogoPath: record.siteLogoPath,
     siteIconPath: siteBrandingSettings.iconPath || null,
     siteSeoKeywords: String(record.siteSeoKeywords || "").split(/[，,\n]+/).map((item) => item.trim()).filter(Boolean),
-    pointName: record.pointName,
+    pointName: record.pointName.trim() || "积分",
     redeemCodeHelpEnabled: redeemCodeHelpSettings.enabled,
     redeemCodeHelpTitle: redeemCodeHelpSettings.title,
     redeemCodeHelpUrl: redeemCodeHelpSettings.url,
@@ -456,6 +457,7 @@ function mapSiteSettings(record: SiteSettingsRecordData, tippingGifts: SiteTippi
     homeSidebarStatsCardEnabled: record.homeSidebarStatsCardEnabled,
     homeSidebarAnnouncementsEnabled: homeSidebarAnnouncementSettings.enabled,
     userProfileIpLocationEnabled: userProfileDisplaySettings.ipLocationEnabled,
+    userProfileIntroductionEnabled: userProfileDisplaySettings.introductionEnabled,
     leftSidebarDisplayMode: leftSidebarDisplaySettings.mode,
     leftSidebarNavigationMode: leftSidebarNavigationSettings.mode,
     leftSidebarHome: leftSidebarHomeSettings,

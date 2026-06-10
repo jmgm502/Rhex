@@ -6,6 +6,7 @@ import {
 } from "@/lib/addon-provider-registry"
 import { enqueueBackgroundJob } from "@/lib/background-jobs"
 import { getServerSiteSettings } from "@/lib/site-settings"
+import type { AddonSmsProviderRuntimeHooks, AddonSmsProviderSendResult } from "@/addons-host/types"
 import type { ServerSiteSettingsData } from "@/lib/site-settings.types"
 
 export interface SmsSendInput {
@@ -25,11 +26,6 @@ export interface SmsSendResult {
   jobId?: string
   messageId?: string | null
   requestId?: string | null
-}
-
-interface SmsProviderRuntime {
-  isRunnable?: (input: SmsSendInput) => boolean | Promise<boolean>
-  send?: (input: SmsSendInput) => SmsSendResult | Promise<SmsSendResult | void> | void
 }
 
 function normalizeOptionalString(value: unknown) {
@@ -95,7 +91,7 @@ async function sendWithAliyun(input: SmsSendInput, settings: ServerSiteSettingsD
   }
 }
 
-function normalizeProviderResult(provider: string, value: SmsSendResult | void | null | undefined): SmsSendResult {
+function normalizeProviderResult(provider: string, value: AddonSmsProviderSendResult | void | null | undefined): SmsSendResult {
   if (!value) {
     return {
       provider,
@@ -118,12 +114,18 @@ export async function canSendSms() {
     return true
   }
 
-  const providers = await listAddonProviderRuntimeItems<SmsProviderRuntime>("sms")
-  return providers.some((item) => typeof item.runtime?.send === "function")
+  const providers = await listAddonProviderRuntimeItems<AddonSmsProviderRuntimeHooks>("sms")
+  return providers.some((item) => (
+    typeof item.runtime?.send === "function"
+    || (
+      typeof item.runtime?.sendVerificationCode === "function"
+      && typeof item.runtime?.verifyVerificationCode === "function"
+    )
+  ))
 }
 
 export async function deliverSms(input: SmsSendInput): Promise<SmsSendResult> {
-  const providers = await listAddonProviderRuntimeItems<SmsProviderRuntime>("sms")
+  const providers = await listAddonProviderRuntimeItems<AddonSmsProviderRuntimeHooks>("sms")
 
   for (const item of providers) {
     if (typeof item.runtime?.send !== "function") {
@@ -139,7 +141,7 @@ export async function deliverSms(input: SmsSendInput): Promise<SmsSendResult> {
     }
 
     const result = await invokeAddonProviderRuntime(item, "send", () => input)
-    return normalizeProviderResult(item.provider.code, result as SmsSendResult | void | null | undefined)
+    return normalizeProviderResult(item.provider.code, result as AddonSmsProviderSendResult | void | null | undefined)
   }
 
   return sendWithAliyun(input, await getServerSiteSettings())

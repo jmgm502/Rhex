@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/rbutton"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "@/components/ui/toast"
 import { Tooltip } from "@/components/ui/tooltip"
-import { formatCompactNumber, formatNumber } from "@/lib/formatters"
+import { formatCompactNumber, formatCompactPointValue, formatNumber } from "@/lib/formatters"
 import type { SiteTippingGiftItem } from "@/lib/site-settings"
 import { cn } from "@/lib/utils"
 
@@ -163,7 +163,7 @@ export function InlineTipButton({
           syncSummary(result.data)
         }
 
-        const successMessage = result.message ?? (targetGift ? `已送出 ${targetGift.name}` : `已成功打赏 ${formatNumber(targetAmount)} ${pointName}`)
+        const successMessage = result.message ?? (targetGift ? `已送出 ${targetGift.name}` : `已成功打赏 ${formatCompactPointValue(targetAmount)} ${pointName}`)
         setMessage(successMessage)
         toast.success(successMessage, "打赏成功")
       } catch {
@@ -180,7 +180,7 @@ export function InlineTipButton({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <Tooltip content={tipTotalPoints > 0 ? `已收到 ${formatNumber(tipTotalPoints)} ${pointName}` : label}>
+      <Tooltip content={tipTotalPoints > 0 ? `已收到 ${formatCompactPointValue(tipTotalPoints)} ${pointName}` : label}>
         <PopoverTrigger
           type="button"
           className={cn("inline-flex items-center gap-1 rounded-full text-muted-foreground transition-colors hover:text-foreground", className)}
@@ -198,7 +198,7 @@ export function InlineTipButton({
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
             <span>{targetLabel}打赏</span>
-            <span>{pointName} {formatNumber(points)}</span>
+            <span>{pointName} {formatCompactPointValue(points)}</span>
           </div>
           {normalizedGifts.length > 0 ? (
             <div className="flex flex-col gap-1.5">
@@ -213,7 +213,7 @@ export function InlineTipButton({
                       className="relative flex h-10 items-center justify-center rounded-xl border border-border bg-card text-base transition-colors hover:bg-accent/60 disabled:opacity-60"
                       onClick={() => handleTip({ gift })}
                       disabled={isPending}
-                      title={`${gift.name} · ${formatNumber(gift.price)} ${pointName}`}
+                      title={`${gift.name} · ${formatCompactPointValue(gift.price)} ${pointName}`}
                     >
                       <LevelIcon icon={gift.icon} className="h-4 w-4 text-base" emojiClassName="text-inherit leading-none" svgClassName="[&>svg]:block [&>svg]:h-full [&>svg]:w-full" title={gift.name} />
                       {stat?.totalCount ? (
@@ -246,7 +246,7 @@ export function InlineTipButton({
                 ))}
               </div>
               <Button type="button" size="sm" onClick={() => handleTip()} disabled={isPending} className="w-full">
-                {isPending ? "提交中..." : `打赏 ${effectiveAmount} ${pointName}`}
+                {isPending ? "提交中..." : `打赏 ${formatCompactPointValue(effectiveAmount)} ${pointName}`}
               </Button>
             </div>
           ) : null}
@@ -254,7 +254,7 @@ export function InlineTipButton({
             <span>今日 {todayUsed}/{dailyLimit}</span>
             <span>本{targetLabel} {targetUsed}/{perTargetLimit}</span>
           </div>
-          {tipTotalPoints > 0 ? <p className="text-[11px] text-muted-foreground">累计收到 {formatNumber(tipTotalPoints)} {pointName}</p> : null}
+          {tipTotalPoints > 0 ? <p className="text-[11px] text-muted-foreground">累计收到 {formatCompactPointValue(tipTotalPoints)} {pointName}</p> : null}
           {message ? <p className="text-[11px] text-muted-foreground">{message}</p> : null}
         </div>
       </PopoverContent>

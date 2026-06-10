@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react"
 
+import { AdminClientPaginationBar } from "@/components/admin/admin-pagination-bar"
 import { Button } from "@/components/ui/rbutton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/components/ui/toast"
@@ -257,6 +258,15 @@ export function AiReplySummaryPage() {
           <CardTitle>缓存列表</CardTitle>
         </CardHeader>
         <CardContent>
+          {pagination.totalPages > 1 ? (
+            <AdminClientPaginationBar
+              pagination={pagination}
+              itemLabel="条"
+              loading={loading || pendingAction}
+              className="mb-4"
+              onPageChange={setPage}
+            />
+          ) : null}
           {loading ? (
             <div className="text-sm text-muted-foreground">加载中…</div>
           ) : items.length === 0 ? (
@@ -292,29 +302,13 @@ export function AiReplySummaryPage() {
           )}
 
           {pagination.totalPages > 1 ? (
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span>
-                第 {pagination.page} / {pagination.totalPages} 页（共 {pagination.total} 条）
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={loading || pendingAction || page <= 1}
-                >
-                  上一页
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                  disabled={loading || pendingAction || page >= pagination.totalPages}
-                >
-                  下一页
-                </Button>
-              </div>
-            </div>
+            <AdminClientPaginationBar
+              pagination={pagination}
+              itemLabel="条"
+              loading={loading || pendingAction}
+              className="mt-4 border-t border-border pt-4"
+              onPageChange={setPage}
+            />
           ) : null}
         </CardContent>
       </Card>

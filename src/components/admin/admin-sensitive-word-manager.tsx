@@ -1,14 +1,14 @@
 ﻿"use client"
 
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Ban, Shield, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
 
+import { AdminPaginationBar } from "@/components/admin/admin-pagination-bar"
 import { AdminSummaryStrip } from "@/components/admin/admin-summary-strip"
 import { showConfirm } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Card,
@@ -36,7 +36,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatDateTime, formatNumber } from "@/lib/formatters"
-import { cn } from "@/lib/utils"
 
 interface SensitiveWordItem {
   id: string
@@ -417,6 +416,17 @@ export function AdminSensitiveWordManager({ data }: AdminSensitiveWordManagerPro
             </div>
           </div>
         ) : null}
+        {data.words.length > 0 ? (
+          <AdminPaginationBar
+            pagination={data.pagination}
+            buildPageHref={buildPageHref}
+            itemLabel={text.totalSuffix}
+            className="border-b border-border px-6 py-3"
+            align="center"
+            previousLabel={text.previousPage}
+            nextLabel={text.nextPage}
+          />
+        ) : null}
         <CardContent className="px-0 py-0">
           {data.words.length === 0 ? (
             <div className="px-6 py-12 text-center text-sm text-muted-foreground">{text.noRules}</div>
@@ -481,44 +491,19 @@ export function AdminSensitiveWordManager({ data }: AdminSensitiveWordManagerPro
             </Table>
           )}
         </CardContent>
-        <CardFooter className="flex flex-col items-center justify-center gap-3">
-          <div className="flex flex-wrap items-center justify-center gap-3 text-center text-xs text-muted-foreground">
-            <span>{`${text.pagePrefix} ${data.pagination.page} ${text.pageMiddle} ${data.pagination.totalPages} ${text.pageSuffix}`}</span>
-            <span>{`${text.pageSizePrefix} ${data.pagination.pageSize} ${text.pageSizeSuffix}`}</span>
-            <span>{`${text.totalPrefix} ${data.pagination.total} ${text.totalSuffix}`}</span>
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            <PaginationLink href={data.pagination.hasPrevPage ? buildPageHref(data.pagination.page - 1) : "#"} disabled={!data.pagination.hasPrevPage}>{text.previousPage}</PaginationLink>
-            <Badge variant="secondary" className="h-8 rounded-full px-3 text-sm">{data.pagination.page}</Badge>
-            <PaginationLink href={data.pagination.hasNextPage ? buildPageHref(data.pagination.page + 1) : "#"} disabled={!data.pagination.hasNextPage}>{text.nextPage}</PaginationLink>
-          </div>
+        <CardFooter>
+          <AdminPaginationBar
+            pagination={data.pagination}
+            buildPageHref={buildPageHref}
+            itemLabel={text.totalSuffix}
+            className="w-full"
+            align="center"
+            previousLabel={text.previousPage}
+            nextLabel={text.nextPage}
+          />
         </CardFooter>
       </Card>
     </div>
-  )
-}
-
-function PaginationLink({
-  href,
-  disabled,
-  children,
-}: {
-  href: string
-  disabled: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <Link
-      href={href}
-      aria-disabled={disabled}
-      className={cn(
-        buttonVariants({ variant: "outline", size: "default" }),
-        "rounded-full px-3 text-xs",
-        disabled ? "pointer-events-none opacity-40" : ""
-      )}
-    >
-      {children}
-    </Link>
   )
 }
 

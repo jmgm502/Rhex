@@ -28,10 +28,11 @@ import { UserVerificationBadge } from "@/components/user/user-verification-badge
 import { VipLevelIcon } from "@/components/vip/vip-level-icon"
 import { AdminPostActionButton } from "@/components/admin/admin-post-action-button"
 import { AdminUserStatusModal } from "@/components/admin/admin-user-status-modal"
-import { formatDateTime, formatNumber, serializeDate } from "@/lib/formatters"
+import { formatCompactPointValue, formatDateTime, serializeDate } from "@/lib/formatters"
 import { canViewUserProfileVisibility } from "@/lib/user-profile-settings"
 import { buildUserProfileRadarData } from "@/lib/user-profile-radar"
 import { VipDisplayName } from "@/components/vip/vip-display-name"
+import { resolveUserProfileIntroductionPermission } from "@/lib/addon-user-profile-introduction-permissions"
 import { getAiAgentUserIds } from "@/lib/ai-agent"
 import { getCurrentUser } from "@/lib/auth"
 import { getBadgeEligibilitySnapshot, getGrantedBadgesForUser } from "@/lib/badges"
@@ -124,9 +125,19 @@ function parsePageParam(value: string | string[] | undefined) {
   return Number.isInteger(page) && page > 0 ? page : 1
 }
 
-function resolveUserActivityTab(value: string | undefined, pages: { postsPage: number; repliesPage: number }): UserActivityTabKey {
+function resolveUserActivityTab(
+  value: string | undefined,
+  pages: { postsPage: number; repliesPage: number },
+  options: { introductionEnabled?: boolean } = {},
+): UserActivityTabKey {
+  const introductionEnabled = options.introductionEnabled ?? true
+
   if (value && userActivityTabKeys.includes(value as UserActivityTabKey)) {
-    return value as UserActivityTabKey
+    const tab = value as UserActivityTabKey
+
+    if (tab !== "introduction" || introductionEnabled) {
+      return tab
+    }
   }
 
   if (pages.postsPage > 1) {
@@ -137,13 +148,14 @@ function resolveUserActivityTab(value: string | undefined, pages: { postsPage: n
     return "replies"
   }
 
-  return "introduction"
+  return introductionEnabled ? "introduction" : "posts"
 }
 
 function buildUserActivityHref(
   username: string,
   currentState: { tab: UserActivityTabKey; postsPage: number; repliesPage: number },
   overrides: Partial<{ tab: UserActivityTabKey; postsPage: number; repliesPage: number }> = {},
+  defaultTab: UserActivityTabKey = "introduction",
 ) {
   const nextState = {
     ...currentState,
@@ -151,7 +163,7 @@ function buildUserActivityHref(
   }
   const searchParams = new URLSearchParams()
 
-  if (nextState.tab !== "introduction" || nextState.postsPage > 1 || nextState.repliesPage > 1) {
+  if (nextState.tab !== defaultTab || nextState.postsPage > 1 || nextState.repliesPage > 1) {
     searchParams.set("tab", nextState.tab)
   }
 
@@ -189,7 +201,7 @@ export default async function UserPage(props: PageProps<"/users/[username]">) {
   const searchParams = props.searchParams ? await props.searchParams : undefined
   const postsPage = parsePageParam(searchParams?.postsPage)
   const repliesPage = parsePageParam(searchParams?.repliesPage)
-  const activityTab = resolveUserActivityTab(readSearchParam(searchParams?.tab), { postsPage, repliesPage })
+  const rawActivityTab = readSearchParam(searchParams?.tab)
   const [user, settings, currentUser, aiAgentUserIds, boards, zones] = await Promise.all([getUserProfile(params.username), getSiteSettings(), getCurrentUser(), getAiAgentUserIds(), getBoards(), getZones()])
 
   if (!user) {
@@ -228,8 +240,21 @@ export default async function UserPage(props: PageProps<"/users/[username]">) {
     isOwner: currentUser?.id === user.id,
     isLoggedIn: Boolean(currentUser),
   }
+  const profileIntroductionEnabled = settings.userProfileIntroductionEnabled
+  const defaultActivityTab: UserActivityTabKey = profileIntroductionEnabled ? "introduction" : "posts"
+  const activityTab = resolveUserActivityTab(rawActivityTab, { postsPage, repliesPage }, {
+    introductionEnabled: profileIntroductionEnabled,
+  })
   const canViewRecentActivity = canViewUserProfileVisibility(user.activityVisibility, visibilityContext)
-  const canViewIntroduction = canViewUserProfileVisibility(user.introductionVisibility, visibilityContext)
+  const canViewIntroductionByVisibility = profileIntroductionEnabled && canViewUserProfileVisibility(user.introductionVisibility, visibilityContext)
+  const introductionViewPermission = canViewIntroductionByVisibility
+    ? await resolveUserProfileIntroductionPermission({
+        action: "view",
+        owner: user,
+        viewer: currentUser,
+      })
+    : { allowed: false, reason: null }
+  const canViewIntroduction = canViewIntroductionByVisibility && introductionViewPermission.allowed
   const introduction = user.introduction.trim()
 
   const [postsPageData, recentRepliesPageData, activeBoards, publicCollections, badgeItems, radarSnapshot, isFollowingUser] = await Promise.all([
@@ -350,6 +375,95 @@ export default async function UserPage(props: PageProps<"/users/[username]">) {
     ? resolveIpLocationLabel(user.lastLoginIp)
     : null
   const identityTags = user.identityTags ?? []
+  const userActivityTabs = [
+    ...(profileIntroductionEnabled
+      ? [{
+          key: "introduction",
+          label: "介绍",
+          content: !canViewIntroduction ? (
+            <div className="rounded-xl border border-dashed  px-4 py-12 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-white/2">
+              {introductionViewPermission.reason || (user.introductionVisibility === "MEMBERS" ? "该用户将介绍设置为登录后可见。" : "该用户未公开介绍。")}
+            </div>
+          ) : introduction ? (
+            <div className="bg-card px-4 pb-4">
+              <MarkdownContent
+                content={introduction}
+                markdownEmojiMap={settings.markdownEmojiMap}
+                className="markdown-body prose prose-sm max-w-none prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1"
+              />
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed  px-4 py-12 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-white/2">
+              这个用户还没有填写详细介绍。
+            </div>
+          ),
+        }]
+      : []),
+    {
+      key: "posts",
+      label: "帖子",
+      count: canViewRecentActivity ? user.postCount : 0,
+      content: !canViewRecentActivity ? (
+        <div className="rounded-xl border border-dashed  px-4 py-12 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-white/2">
+          {user.activityVisibility === "MEMBERS" ? "该用户将最近帖子设置为登录后可见。" : "该用户未公开最近帖子。"}
+        </div>
+      ) : postsPageData.items.length === 0 ? (
+        <div className="rounded-xl border border-dashed  px-4 py-12 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-white/2">
+          最近还没有发布帖子。
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <ForumPostStream posts={postsPageData.items} compactFirstItem={false} />
+          {postsPageData.pagination.totalPages > 1 ? (
+            <PageNumberPagination
+              page={postsPageData.pagination.page}
+              totalPages={postsPageData.pagination.totalPages}
+              hasPrevPage={postsPageData.pagination.hasPrevPage}
+              hasNextPage={postsPageData.pagination.hasNextPage}
+              buildHref={(targetPage) => buildUserActivityHref(params.username, activityRouteState, {
+                tab: "posts",
+                postsPage: targetPage,
+              }, defaultActivityTab)}
+            />
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      key: "collections",
+      label: "合集",
+      count: publicCollections.pagination.total,
+      content: <UserPublicCollectionsPanel username={user.username} initialData={publicCollections} />,
+    },
+    {
+      key: "replies",
+      label: "回复",
+      count: canViewRecentActivity ? recentRepliesPageData.pagination.total : 0,
+      content: canViewRecentActivity
+        ? (
+          <div className="space-y-4">
+            <UserRecentRepliesList replies={recentRepliesPageData.items} postLinkDisplayMode={settings.postLinkDisplayMode} />
+            {recentRepliesPageData.pagination.totalPages > 1 ? (
+              <PageNumberPagination
+                page={recentRepliesPageData.pagination.page}
+                totalPages={recentRepliesPageData.pagination.totalPages}
+                hasPrevPage={recentRepliesPageData.pagination.hasPrevPage}
+                hasNextPage={recentRepliesPageData.pagination.hasNextPage}
+                buildHref={(targetPage) => buildUserActivityHref(params.username, activityRouteState, {
+                  tab: "replies",
+                  repliesPage: targetPage,
+                }, defaultActivityTab)}
+              />
+            ) : null}
+          </div>
+        )
+        : (
+          <div className="rounded-xl border border-dashed  px-4 py-12 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-white/2">
+            {user.activityVisibility === "MEMBERS" ? "该用户将最近回复设置为登录后可见。" : "该用户未公开最近回复。"}
+          </div>
+        ),
+    },
+  ]
 
   const hasIdentityIcons = Boolean(user.verification || isAnonymousMaskUser || isAiAgentUser || restrictionLabel)
   const displayedBadgeItems = user.displayedBadges ?? []
@@ -441,7 +555,7 @@ export default async function UserPage(props: PageProps<"/users/[username]">) {
                   )}
                   pointsBadge={(
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium leading-none text-amber-700 dark:bg-amber-500/15 dark:text-amber-200 sm:px-2.5 sm:py-0.75 sm:text-xs">
-                      {formatNumber(user.points)} {settings.pointName}
+                      {formatCompactPointValue(user.points)} {settings.pointName}
                     </span>
                   )}
                   sidePanel={desktopRadarPanel}
@@ -515,94 +629,8 @@ export default async function UserPage(props: PageProps<"/users/[username]">) {
                   description={canViewRecentActivity ? "" : ""}
                   showSummary={false}
                   activeTabKey={activityTab}
-                  buildTabHref={(tabKey) => buildUserActivityHref(params.username, activityRouteState, { tab: tabKey as UserActivityTabKey })}
-                  tabs={[
-                    {
-                      key: "introduction",
-                      label: "介绍",
-                      content: !canViewIntroduction ? (
-                        <div className="rounded-xl border border-dashed  px-4 py-12 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-white/2">
-                          {user.introductionVisibility === "MEMBERS" ? "该用户将介绍设置为登录后可见。" : "该用户未公开介绍。"}
-                        </div>
-                      ) : introduction ? (
-                        <div className="bg-card px-4 pb-4">
-                          <MarkdownContent
-                            content={introduction}
-                            markdownEmojiMap={settings.markdownEmojiMap}
-                            className="markdown-body prose prose-sm max-w-none prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1"
-                          />
-                        </div>
-                      ) : (
-                        <div className="rounded-xl border border-dashed  px-4 py-12 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-white/2">
-                          这个用户还没有填写详细介绍。
-                        </div>
-                      ),
-                    },
-                    {
-                      key: "posts",
-                      label: "帖子",
-                      count: canViewRecentActivity ? user.postCount : 0,
-                      content: !canViewRecentActivity ? (
-                        <div className="rounded-xl border border-dashed  px-4 py-12 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-white/2">
-                          {user.activityVisibility === "MEMBERS" ? "该用户将最近帖子设置为登录后可见。" : "该用户未公开最近帖子。"}
-                        </div>
-                      ) : postsPageData.items.length === 0 ? (
-                        <div className="rounded-xl border border-dashed  px-4 py-12 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-white/2">
-                          最近还没有发布帖子。
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <ForumPostStream posts={postsPageData.items} compactFirstItem={false} />
-                          {postsPageData.pagination.totalPages > 1 ? (
-                            <PageNumberPagination
-                              page={postsPageData.pagination.page}
-                              totalPages={postsPageData.pagination.totalPages}
-                              hasPrevPage={postsPageData.pagination.hasPrevPage}
-                              hasNextPage={postsPageData.pagination.hasNextPage}
-                              buildHref={(targetPage) => buildUserActivityHref(params.username, activityRouteState, {
-                                tab: "posts",
-                                postsPage: targetPage,
-                              })}
-                            />
-                          ) : null}
-                        </div>
-                      ),
-                    },
-                    {
-                      key: "collections",
-                      label: "合集",
-                      count: publicCollections.pagination.total,
-                      content: <UserPublicCollectionsPanel username={user.username} initialData={publicCollections} />,
-                    },
-                    {
-                      key: "replies",
-                      label: "回复",
-                      count: canViewRecentActivity ? recentRepliesPageData.pagination.total : 0,
-                      content: canViewRecentActivity
-                        ? (
-                          <div className="space-y-4">
-                            <UserRecentRepliesList replies={recentRepliesPageData.items} postLinkDisplayMode={settings.postLinkDisplayMode} />
-                            {recentRepliesPageData.pagination.totalPages > 1 ? (
-                              <PageNumberPagination
-                                page={recentRepliesPageData.pagination.page}
-                                totalPages={recentRepliesPageData.pagination.totalPages}
-                                hasPrevPage={recentRepliesPageData.pagination.hasPrevPage}
-                                hasNextPage={recentRepliesPageData.pagination.hasNextPage}
-                                buildHref={(targetPage) => buildUserActivityHref(params.username, activityRouteState, {
-                                  tab: "replies",
-                                  repliesPage: targetPage,
-                                })}
-                              />
-                            ) : null}
-                          </div>
-                        )
-                        : (
-                          <div className="rounded-xl border border-dashed  px-4 py-12 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-white/2">
-                            {user.activityVisibility === "MEMBERS" ? "该用户将最近回复设置为登录后可见。" : "该用户未公开最近回复。"}
-                          </div>
-                        ),
-                    },
-                  ]}
+                  buildTabHref={(tabKey) => buildUserActivityHref(params.username, activityRouteState, { tab: tabKey as UserActivityTabKey }, defaultActivityTab)}
+                  tabs={userActivityTabs}
                     />
                   </AddonSurfaceRenderer>
                   <AddonSlotRenderer slot="user.activity.after" props={userSlotProps} />

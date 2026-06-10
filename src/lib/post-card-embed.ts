@@ -336,7 +336,48 @@ function trimUrlCandidate(value: string) {
   return value.replace(/[),.;:!?，。；：！？、\]}]+$/u, "")
 }
 
-const INLINE_INTERNAL_POST_URL_PATTERN = /(^|[\s([{])((?:https?:\/\/[^\s<>"']+)|(?:\/posts\/[^\s<>"']+))/giu
+const INLINE_INTERNAL_POST_URL_MARKER_PATTERN = /https?:\/\/|\/posts\//giu
+
+function hasInternalUrlStartBoundary(value: string, startIndex: number) {
+  if (startIndex <= 0) {
+    return true
+  }
+
+  const previous = value[startIndex - 1] ?? ""
+  return !/[A-Za-z0-9@/._~%=&"'<>-]/.test(previous)
+}
+
+function isUrlCandidateTerminator(value: string) {
+  return /\s/u.test(value) || /[<>"'`,;，。；：！？、（）()[\]{}【】「」『』《》]/u.test(value)
+}
+
+function collectInternalPostUrlCandidates(line: string) {
+  const candidates: Array<{ rawUrl: string; startIndex: number }> = []
+  let consumedUntil = 0
+
+  INLINE_INTERNAL_POST_URL_MARKER_PATTERN.lastIndex = 0
+  for (const matched of line.matchAll(INLINE_INTERNAL_POST_URL_MARKER_PATTERN)) {
+    const startIndex = matched.index ?? 0
+    if (startIndex < consumedUntil || !hasInternalUrlStartBoundary(line, startIndex)) {
+      continue
+    }
+
+    let endIndex = startIndex
+    while (endIndex < line.length && !isUrlCandidateTerminator(line[endIndex] ?? "")) {
+      endIndex += 1
+    }
+
+    const rawUrl = line.slice(startIndex, endIndex)
+    if (!rawUrl) {
+      continue
+    }
+
+    candidates.push({ rawUrl, startIndex })
+    consumedUntil = endIndex
+  }
+
+  return candidates
+}
 
 export function extractInternalPostUrlsFromLine(line: string, options?: string | InternalPostUrlExtractionOptions): InternalPostUrlInlineMatch[] {
   const trimmed = line.trim()
@@ -345,12 +386,10 @@ export function extractInternalPostUrlsFromLine(line: string, options?: string |
   }
 
   const matches: InternalPostUrlInlineMatch[] = []
-  INLINE_INTERNAL_POST_URL_PATTERN.lastIndex = 0
 
-  for (const matched of line.matchAll(INLINE_INTERNAL_POST_URL_PATTERN)) {
-    const prefix = matched[1] ?? ""
-    const rawUrl = matched[2] ?? ""
-    const rawStartIndex = (matched.index ?? 0) + prefix.length
+  for (const matched of collectInternalPostUrlCandidates(line)) {
+    const rawUrl = matched.rawUrl
+    const rawStartIndex = matched.startIndex
     const url = trimUrlCandidate(rawUrl)
     const startIndex = rawStartIndex
     const endIndex = rawStartIndex + url.length

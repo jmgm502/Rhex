@@ -41,6 +41,7 @@ export interface SiteSettingsBaseData {
   homeSidebarStatsCardEnabled: boolean
   homeSidebarAnnouncementsEnabled: boolean
   userProfileIpLocationEnabled: boolean
+  userProfileIntroductionEnabled: boolean
   leftSidebarDisplayMode: LeftSidebarDisplayMode
   leftSidebarNavigationMode: LeftSidebarNavigationMode
   leftSidebarHome: LeftSidebarHomeSettings

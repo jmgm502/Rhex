@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react"
 
+import { AdminClientPaginationBar } from "@/components/admin/admin-pagination-bar"
 import { Button } from "@/components/ui/rbutton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/components/ui/toast"
@@ -129,6 +130,14 @@ export function AiReplyModerationPage() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {pagination.totalPages > 1 ? (
+          <AdminClientPaginationBar
+            pagination={pagination}
+            itemLabel="条待处理"
+            loading={loading || pendingAction}
+            onPageChange={setPage}
+          />
+        ) : null}
         {loading ? (
           <div className="py-10 text-center text-muted-foreground">加载中…</div>
         ) : items.length === 0 ? (
@@ -210,24 +219,15 @@ export function AiReplyModerationPage() {
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1 || loading}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            上一页
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= pagination.totalPages || loading}
-            onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-          >
-            下一页
-          </Button>
-        </div>
+        {pagination.totalPages > 1 ? (
+          <AdminClientPaginationBar
+            pagination={pagination}
+            itemLabel="条待处理"
+            loading={loading || pendingAction}
+            className="border-t border-border pt-4"
+            onPageChange={setPage}
+          />
+        ) : null}
       </CardContent>
     </Card>
   )

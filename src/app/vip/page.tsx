@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/rbutton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getCurrentUser } from "@/lib/auth"
 import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
-import { formatDateTime, formatNumber } from "@/lib/formatters"
+import { formatCompactPointValue, formatDateTime } from "@/lib/formatters"
 import { getSiteSettings } from "@/lib/site-settings"
 import { getVipLevel, getVipNameClass, isVipActive } from "@/lib/vip-status"
 
@@ -24,14 +24,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 function formatPointValue(value: number, pointName: string, suffix: string) {
-  return value > 0 ? `${formatNumber(value)} ${pointName}${suffix}` : `免费${suffix}`
+  return value > 0 ? `${formatCompactPointValue(value)} ${pointName}${suffix}` : `免费${suffix}`
 }
 
 const vipMilestones = (settings: Awaited<ReturnType<typeof getSiteSettings>>) => [
   {
     level: 1,
     title: "VIP 1",
-    requirement: `使用 ${formatNumber(settings.vipMonthlyPrice)} ${settings.pointName} 购买月卡，生效 30 天`,
+    requirement: `使用 ${formatCompactPointValue(settings.vipMonthlyPrice)} ${settings.pointName} 购买月卡，生效 30 天`,
     privileges: [
       "可访问 VIP 专属节点、帖子与回复区域",
       `签到奖励：${settings.checkInVip1RewardText} ${settings.pointName} / 次`,
@@ -44,7 +44,7 @@ const vipMilestones = (settings: Awaited<ReturnType<typeof getSiteSettings>>) =>
   {
     level: 2,
     title: "VIP 2",
-    requirement: `使用 ${formatNumber(settings.vipQuarterlyPrice)} ${settings.pointName} 购买季卡，生效 90 天`,
+    requirement: `使用 ${formatCompactPointValue(settings.vipQuarterlyPrice)} ${settings.pointName} 购买季卡，生效 90 天`,
     privileges: [
       "包含 VIP1 全部权益，并可进入更高等级权限节点",
       `签到奖励：${settings.checkInVip2RewardText} ${settings.pointName} / 次`,
@@ -57,7 +57,7 @@ const vipMilestones = (settings: Awaited<ReturnType<typeof getSiteSettings>>) =>
   {
     level: 3,
     title: "VIP 3",
-    requirement: `使用 ${formatNumber(settings.vipYearlyPrice)} ${settings.pointName} 购买年卡，生效 365 天`,
+    requirement: `使用 ${formatCompactPointValue(settings.vipYearlyPrice)} ${settings.pointName} 购买年卡，生效 365 天`,
     privileges: [
       "包含 VIP1、VIP2 全部权益，并享受最高档位身份能力",
       `签到奖励：${settings.checkInVip3RewardText} ${settings.pointName} / 次`,

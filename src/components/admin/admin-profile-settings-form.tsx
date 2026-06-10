@@ -533,6 +533,13 @@ export function AdminProfileSettingsForm({
                   description="开启后在用户主页基础信息行显示最近登录 IP 的省份或国家/地区，不展示原始 IP。"
                 />
                 <SettingsToggleField
+                  label="用户主页个人介绍"
+                  checked={draft.userProfileIntroductionEnabled}
+                  onChange={(value) =>
+                    updateDraftField("userProfileIntroductionEnabled", value)}
+                  description="关闭后用户主页不再显示“介绍”标签，设置中心也隐藏个人介绍修改入口。"
+                />
+                <SettingsToggleField
                   label="站内搜索"
                   checked={draft.searchEnabled}
                   onChange={(value) => updateDraftField("searchEnabled", value)}

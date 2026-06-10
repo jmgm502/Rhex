@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Modal } from "@/components/ui/modal"
-import { formatBusinessMonthDayTime, formatNumber } from "@/lib/formatters"
+import { formatBusinessMonthDayTime, formatCompactPointValue } from "@/lib/formatters"
 import type { GobangMatch, GobangPlayerSummary } from "@/lib/gobang"
 import { cn } from "@/lib/utils"
 
@@ -146,7 +146,7 @@ function GameControls({ gameState, canViewPreviousResult, onStartGame, onViewPre
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-md bg-muted p-2 text-sm"><div className="flex items-center justify-between gap-2"><span>免费次数</span><span className={cn(freeCount > 0 ? "text-green-500" : "text-red-500", "font-bold")}>{freeUsed}/{freeTotal}</span></div><p className="mt-1 text-xs text-muted-foreground">剩余 {freeCount} 次</p></div>
             <div className="rounded-md bg-muted p-2 text-sm"><div className="flex items-center justify-between gap-2"><span>付费次数</span><span className={cn(paidRemain > 0 ? "text-green-500" : "text-red-500", "font-bold")}>{paidUsed}/{paidTotal}</span></div><p className="mt-1 text-xs text-muted-foreground">剩余 {paidRemain} 次</p></div>
-            <div className="col-span-2 flex items-center justify-between rounded-md bg-muted p-2 text-sm"><span>{pointName}</span><span className="font-bold text-primary">{formatNumber(points)}</span></div>
+            <div className="col-span-2 flex items-center justify-between rounded-md bg-muted p-2 text-sm"><span>{pointName}</span><span className="font-bold text-primary">{formatCompactPointValue(points)}</span></div>
           </div>
           {message ? <div className={cn("rounded-md p-3 font-bold", message.includes("赢") ? "bg-green-100 text-green-700" : message.includes("平局") || message.includes("请") ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700")}>{message}</div> : null}
           {canShowPreviousResultButton ? <button type="button" className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground" onClick={onViewPreviousResult}>查看上一局结果</button> : null}
@@ -192,7 +192,7 @@ function PreviousResultModal({ open, match, message, winningLine, canSelectPrevi
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
             <span>{formatMatchTime(match.finishedAt || match.updatedAt || match.moves.at(-1)?.createdAt || match.createdAt)}</span>
-            <span>{match.challengeMode === "FREE" ? "免费挑战" : `付费挑战 · ${match.ticketCost} 积分`}</span>
+            <span>{match.challengeMode === "FREE" ? "免费挑战" : `付费挑战 · ${formatCompactPointValue(match.ticketCost)} 积分`}</span>
             <span>{match.firstHand === "PLAYER" ? "你先手" : "AI 先手"}</span>
           </div>
           <div className={cn("rounded-md p-3 font-bold", message.includes("你赢") ? "bg-green-100 text-green-700" : message.includes("平局") ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700")}>{message}</div>
@@ -309,8 +309,8 @@ export function GobangPage({ config, initialMatches, initialSummary }: GobangPag
     return [
       `普通用户每日免费挑战 ${freeGames} 次，VIP 用户额外增加 ${vipFreeGames} 次免费次数。`,
       `普通用户每日总对局上限 ${normalGameLimit} 次，VIP 用户每日总对局上限 ${vipGameLimit} 次。`,
-      `免费次数用完后，每次花费 ${formatNumber(ticketCost)} ${pointLabel}；付费挑战胜利返还本金 + 奖金，共 ${formatNumber(paidWinTotal)} ${pointLabel}，失败不退${pointLabel}。`,
-      `免费挑战胜利获得 ${formatNumber(winReward)} ${pointLabel}，玩家 / AI 随机执黑先手，平局判玩家胜，本对弈无禁手规则。`,
+      `免费次数用完后，每次花费 ${formatCompactPointValue(ticketCost)} ${pointLabel}；付费挑战胜利返还本金 + 奖金，共 ${formatCompactPointValue(paidWinTotal)} ${pointLabel}，失败不退${pointLabel}。`,
+      `免费挑战胜利获得 ${formatCompactPointValue(winReward)} ${pointLabel}，玩家 / AI 随机执黑先手，平局判玩家胜，本对弈无禁手规则。`,
     ]
   }, [config.dailyFreeGames, config.dailyVipFreeGames, config.dailyNormalGameLimit, config.dailyVipGameLimit, config.ticketCost, config.winReward, gameState.pointName])
 

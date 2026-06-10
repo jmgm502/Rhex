@@ -5,12 +5,14 @@ import { findUserByPhone } from "@/db/password-reset-queries"
 import { isValidMainlandPhone, normalizePhoneNumber } from "@/lib/phone"
 import { getRequestIp } from "@/lib/request-ip"
 import { logRouteWriteSuccess } from "@/lib/route-metadata"
+import { getSessionActorFromRequest } from "@/lib/auth"
 import { isVerificationChannel, VerificationChannel } from "@/lib/shared/verification-channel"
 import { getServerSiteSettings } from "@/lib/site-settings"
+import { sendSmsVerificationCodeWithAddonProviders } from "@/lib/addon-sms-verification"
 import { verifySmsSendCaptcha } from "@/lib/sms-send-captcha"
 import { SMS_CODE_COOLDOWN_MS, SMS_CODE_COOLDOWN_SECONDS } from "@/lib/sms-verification"
 import { sendVerificationCode } from "@/lib/verification"
-import { canSendSms, sendSmsVerificationCode } from "@/lib/sms"
+import { canSendSms } from "@/lib/sms"
 import { createRequestWriteGuardOptions } from "@/lib/write-guard-policies"
 import { withRequestWriteGuard } from "@/lib/write-guard"
 
@@ -46,6 +48,7 @@ export const POST = createRouteHandler(async ({ request }) => {
     ? normalizeEmailAddress(requireStringField(body, "target", "缺少验证码参数"))
     : normalizePhoneNumber(requireStringField(body, "target", "缺少验证码参数"))
   let smsSettings: Awaited<ReturnType<typeof getServerSiteSettings>> | null = null
+  let smsUserId: number | null = null
 
 
   if (!channel || !target) {
@@ -93,6 +96,13 @@ export const POST = createRouteHandler(async ({ request }) => {
       if (!user.phoneVerifiedAt) {
         apiError(403, "该手机号尚未完成绑定验证")
       }
+
+      smsUserId = user.id
+    }
+
+    if (!smsUserId) {
+      const requestUser = await getSessionActorFromRequest(request)
+      smsUserId = requestUser?.id ?? null
     }
   }
 
@@ -125,25 +135,36 @@ export const POST = createRouteHandler(async ({ request }) => {
       apiError(400, "当前站点未配置邮件发送能力或已关闭注册验证码邮件")
     }
 
-    const result = await sendVerificationCode({
-      channel,
-      target,
-      ip: getRequestIp(request),
-      userAgent: request.headers.get("user-agent"),
-      purpose,
-    })
+    const requestIp = getRequestIp(request)
+    const userAgent = request.headers.get("user-agent")
+    let expiresAt: string | null | undefined = null
 
     if (channel === VerificationChannel.EMAIL) {
+      const result = await sendVerificationCode({
+        channel,
+        target,
+        ip: requestIp,
+        userAgent,
+        purpose,
+      })
+
       await sendRegisterVerificationEmail({
         to: target,
         code: result.code,
       })
+
+      expiresAt = result.expiresAt
     } else {
-      await sendSmsVerificationCode({
+      const result = await sendSmsVerificationCodeWithAddonProviders({
+        request,
         phone: target,
-        code: result.code,
         purpose,
+        requestIp,
+        userAgent,
+        userId: smsUserId,
       })
+
+      expiresAt = result.expiresAt
     }
 
     logRouteWriteSuccess({
@@ -157,7 +178,7 @@ export const POST = createRouteHandler(async ({ request }) => {
     })
 
     return apiSuccess({
-      expiresAt: result.expiresAt,
+      expiresAt,
       ...(channel === VerificationChannel.PHONE ? { cooldownSeconds: SMS_CODE_COOLDOWN_SECONDS } : {}),
     }, channel === VerificationChannel.EMAIL ? "验证码已发送到邮箱" : "验证码已发送到手机")
 

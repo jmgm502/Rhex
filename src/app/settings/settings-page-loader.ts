@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { executeAddonAsyncWaterfallHook } from "@/addons-host/runtime/hooks"
 import type { AddonRenderResult } from "@/addons-host/types"
 import { getUserAccountBindingView } from "@/lib/account-binding"
+import { resolveUserProfileIntroductionPermission } from "@/lib/addon-user-profile-introduction-permissions"
 import { getCurrentUser } from "@/lib/auth"
 import { getBoardApplicationPageData } from "@/lib/board-applications"
 import { describeBadgeRule, getBadgeCenterData } from "@/lib/badges"
@@ -278,6 +279,7 @@ export interface SettingsPageData {
   pointLogs: Awaited<ReturnType<typeof getUserPointLogs>> | null
   accountBindings: Awaited<ReturnType<typeof getUserAccountBindingView>> | null
   smsDeliveryEnabled: boolean
+  profileIntroductionEditPermission: Awaited<ReturnType<typeof resolveUserProfileIntroductionPermission>>
 }
 
 function resolveTabKey<T extends string>(value: string | undefined, candidates: readonly T[], fallback: T) {
@@ -557,13 +559,20 @@ export async function loadSettingsPageData(searchParams?: RawSettingsSearchParam
     redirect("/settings?tab=profile")
   }
 
-  const [profile, dbUser, tabData, smsDeliveryEnabled] = await Promise.all([
+  const [profile, dbUser, tabData, smsDeliveryEnabled, profileIntroductionEditPermission] = await Promise.all([
     getUserProfile(currentUser.username),
     getUserAccountSettings(currentUser.id),
     loadSettingsTabData(currentUser, route, settings),
     route.currentTab === "profile" && route.currentProfileTab === "basic"
       ? canSendSms()
       : Promise.resolve(false),
+    settings.userProfileIntroductionEnabled
+      ? resolveUserProfileIntroductionPermission({
+          action: "edit",
+          owner: currentUser,
+          viewer: currentUser,
+        })
+      : Promise.resolve({ allowed: false, reason: "个人介绍功能已关闭。" }),
   ])
 
   if (!profile) {
@@ -618,6 +627,7 @@ export async function loadSettingsPageData(searchParams?: RawSettingsSearchParam
     activePostManagementAddonTab,
     badgeDisplayItems,
     smsDeliveryEnabled,
+    profileIntroductionEditPermission,
     ...tabData,
   }
 }

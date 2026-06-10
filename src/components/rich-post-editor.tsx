@@ -186,7 +186,7 @@ export function RichPostEditor({ value, onChange, placeholder, minHeight = 260 }
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={() => applyWrap("**", "**")}>加粗</Button>
 
-        <Button type="button" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={applyHighlight} title="高亮（Ctrl+X）">
+        <Button type="button" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={applyHighlight} title="高亮（Ctrl+Shift+H）">
           <Highlighter className="mr-1 h-4 w-4" />
           高亮
         </Button>

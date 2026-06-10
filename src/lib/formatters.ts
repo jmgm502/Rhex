@@ -300,6 +300,30 @@ export function formatCompactNumber(value: number) {
   return formatNumber(value)
 }
 
+function formatCompactPointUnit(value: number, unit: "K" | "W", divisor: number) {
+  const normalized = Math.floor((value / divisor) * 10) / 10
+  return `${COMPACT_NUMBER_FORMATTER.format(normalized)}${unit}`
+}
+
+export function formatCompactPointValue(value: number) {
+  if (!Number.isFinite(value)) {
+    return "-"
+  }
+
+  const absoluteValue = Math.abs(value)
+  const sign = value < 0 ? "-" : ""
+
+  if (absoluteValue >= 10_000) {
+    return `${sign}${formatCompactPointUnit(absoluteValue, "W", 10_000)}`
+  }
+
+  if (absoluteValue >= 1_000) {
+    return `${sign}${formatCompactPointUnit(absoluteValue, "K", 1_000)}`
+  }
+
+  return formatNumber(value)
+}
+
 export { BUSINESS_TIME_ZONE }
 
 

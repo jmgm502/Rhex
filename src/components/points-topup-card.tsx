@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/input-group"
 import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
-import { formatNumber } from "@/lib/formatters"
+import { formatCompactPointValue } from "@/lib/formatters"
 import type {
   PaymentGatewayCheckoutMethodOption,
   PaymentGatewayClientType,
@@ -160,7 +160,7 @@ export function PointsTopupCard({
   const normalizedDescription = description.trim() || `选择一个充值套餐并确认支付方式，支付成功后 ${pointName} 会自动到账。若后台路由到扫码通道，会在当前页显示收款二维码。`
   const customAmountFen = useMemo(() => parseAmountInputToFen(customAmountInput), [customAmountInput])
   const customAmountRangeText = customAmountEnabled
-    ? `范围 ${formatAmountFen(customMinAmountFen)} - ${formatAmountFen(customMaxAmountFen)}，当前按 1 元 = ${formatNumber(customPointsPerYuan)} ${pointName} 换算。`
+    ? `范围 ${formatAmountFen(customMinAmountFen)} - ${formatAmountFen(customMaxAmountFen)}，当前按 1 元 = ${formatCompactPointValue(customPointsPerYuan)} ${pointName} 换算。`
     : ""
   const customAmountError = useMemo(() => {
     if (!customAmountEnabled || !customAmountInput.trim()) {
@@ -463,13 +463,13 @@ export function PointsTopupCard({
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {packages.map((item) => {
               const totalPoints = item.points + item.bonusPoints
-              const bonusText = item.bonusPoints > 0 ? `，赠送 ${formatNumber(item.bonusPoints)} ${pointName}` : ""
+              const bonusText = item.bonusPoints > 0 ? `，赠送 ${formatCompactPointValue(item.bonusPoints)} ${pointName}` : ""
               return (
                 <div key={item.id} className="rounded-xl border border-border bg-card/70 p-4">
                   <p className="text-sm font-semibold">{item.title}</p>
-                  <p className="mt-2 text-2xl font-semibold">{formatNumber(totalPoints)} <span className="text-sm font-normal text-muted-foreground">{pointName}</span></p>
+                  <p className="mt-2 text-2xl font-semibold">{formatCompactPointValue(totalPoints)} <span className="text-sm font-normal text-muted-foreground">{pointName}</span></p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    基础 {formatNumber(item.points)} {pointName}{bonusText}
+                    基础 {formatCompactPointValue(item.points)} {pointName}{bonusText}
                   </p>
                   <p className="mt-4 text-sm text-muted-foreground">支付金额 {formatAmountFen(item.amountFen)}</p>
                   <Button
@@ -496,7 +496,7 @@ export function PointsTopupCard({
               </div>
               {customPoints > 0 ? (
                 <div className="rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">
-                  预计到账 {formatNumber(customPoints)} {pointName}
+                  预计到账 {formatCompactPointValue(customPoints)} {pointName}
                 </div>
               ) : null}
             </div>
@@ -546,7 +546,7 @@ export function PointsTopupCard({
               <p className="text-sm font-medium">{pendingOrder.packageTitle}</p>
               <p className="mt-2 text-xs text-muted-foreground">订单号 {pendingOrder.merchantOrderNo}</p>
               <p className="mt-1 text-xs text-muted-foreground">支付方式 {pendingOrder.paymentMethodLabel}</p>
-              <p className="mt-1 text-sm text-muted-foreground">到账 {formatNumber(pendingOrder.totalPoints)} {pointName}</p>
+              <p className="mt-1 text-sm text-muted-foreground">到账 {formatCompactPointValue(pendingOrder.totalPoints)} {pointName}</p>
             </div>
 
             {pendingOrder.qrDataUrl ? (

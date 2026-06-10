@@ -53,7 +53,7 @@ export const GET = createRouteHandler(async ({ request }) => {
     apiError(403, "当前站点已关闭游客查看评论")
   }
 
-  const viewPermission = checkBoardPermission(currentUser, boardAccessContext.settings, "view")
+  const viewPermission = checkBoardPermission(currentUser, boardAccessContext.settings, "view", settings.pointName)
   const postViewPermission = checkPostAccessPermission(currentUser, resolvePostAccessRequirements(boardAccessContext.post))
   const mergedViewPermission = mergeAccessPermissions(viewPermission, postViewPermission)
   const canViewRestrictedPost = isPublicReadablePostStatus(boardAccessContext.post.status) && (mergedViewPermission.allowed || isOwnerOrManager)

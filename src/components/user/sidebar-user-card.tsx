@@ -20,7 +20,7 @@ import { toast } from "@/components/ui/toast"
 import { getCheckInMakeUpEarliestDateKey } from "@/lib/check-in-policy"
 import { getLocalDateKey, getMonthKey, getMonthTitle } from "@/lib/date-key"
 import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
-import { formatCompactNumber, formatNumber } from "@/lib/formatters"
+import { formatCompactNumber, formatCompactPointValue, formatNumber } from "@/lib/formatters"
 import { resolveSiteIconPath } from "@/lib/site-branding"
 import type { PublicUserRoleBadge } from "@/lib/user-presentation"
 import { cn } from "@/lib/utils"
@@ -92,11 +92,11 @@ export interface SidebarUserCardData {
 
 function formatRewardAmountLabel(reward: number) {
   if (reward > 0) {
-    return `+${formatNumber(reward)}`
+    return `+${formatCompactPointValue(reward)}`
   }
 
   if (reward < 0) {
-    return `-${formatNumber(Math.abs(reward))}`
+    return `-${formatCompactPointValue(Math.abs(reward))}`
   }
 
   return "0"
@@ -107,7 +107,7 @@ function formatRewardRangeLabel(rewardText: string | undefined, reward: number |
     return `${rewardText.trim()} ${pointName}`
   }
 
-  return `${formatNumber(reward ?? 0)} ${pointName}`
+  return `${formatCompactPointValue(reward ?? 0)} ${pointName}`
 }
 
 function resolveCurrentMakeUpPrice(user: SidebarUserCardData) {
@@ -245,7 +245,7 @@ function CalendarPendingStatusIcon({
 
   return (
     <span
-      aria-label={`可补签，需 ${formatNumber(makeUpPrice)} ${pointName}`}
+      aria-label={`可补签，需 ${formatCompactPointValue(makeUpPrice)} ${pointName}`}
       className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200"
     >
       <Wallet className="h-2.5 w-2.5" />
@@ -434,8 +434,8 @@ export function SidebarUserCard({ user, createPostHref = "/write", siteName = "�
     ? `当前按 VIP${getVipLevel(safeUser)} 奖励发放`
     : "当前按普通用户奖励发放"
   const makeUpPriceDescription = vipActive
-    ? `当前按 VIP${getVipLevel(safeUser)} 价结算，普通 ${formatNumber(normalMakeUpPrice)} / VIP1 ${formatNumber(vip1MakeUpPrice)} / VIP2 ${formatNumber(vip2MakeUpPrice)} / VIP3 ${formatNumber(vip3MakeUpPrice)}`
-    : `普通账号价 ${formatNumber(normalMakeUpPrice)}，VIP1 ${formatNumber(vip1MakeUpPrice)} / VIP2 ${formatNumber(vip2MakeUpPrice)} / VIP3 ${formatNumber(vip3MakeUpPrice)}`
+    ? `当前按 VIP${getVipLevel(safeUser)} 价结算，普通 ${formatCompactPointValue(normalMakeUpPrice)} / VIP1 ${formatCompactPointValue(vip1MakeUpPrice)} / VIP2 ${formatCompactPointValue(vip2MakeUpPrice)} / VIP3 ${formatCompactPointValue(vip3MakeUpPrice)}`
+    : `普通账号价 ${formatCompactPointValue(normalMakeUpPrice)}，VIP1 ${formatCompactPointValue(vip1MakeUpPrice)} / VIP2 ${formatCompactPointValue(vip2MakeUpPrice)} / VIP3 ${formatCompactPointValue(vip3MakeUpPrice)}`
   const checkInStreakDescription = (calendarData?.makeUpCountsTowardStreak ?? safeUser.checkInMakeUpCountsTowardStreak)
     ? "补签会计入连续签到"
     : "补签不会计入连续签到"
@@ -535,7 +535,7 @@ export function SidebarUserCard({ user, createPostHref = "/write", siteName = "�
     try {
       const confirmed = await showConfirm({
         title: "确认补签",
-        description: `确认补签 ${date} 吗？\n${makeUpPrice > 0 ? `需消耗：${formatNumber(makeUpPrice)} ${pointName}` : "本次补签免费"}\n可获得：${rewardLabel}\n${checkInStreakDescription}`,
+        description: `确认补签 ${date} 吗？\n${makeUpPrice > 0 ? `需消耗：${formatCompactPointValue(makeUpPrice)} ${pointName}` : "本次补签免费"}\n可获得：${rewardLabel}\n${checkInStreakDescription}`,
         confirmText: "确认补签",
       })
 
@@ -643,7 +643,7 @@ export function SidebarUserCard({ user, createPostHref = "/write", siteName = "�
               </span>
               <div className="min-w-0">
                 <p className="text-xs text-amber-800/80 dark:text-amber-200/80">{pointName}</p>
-                <p className="truncate text-sm font-semibold">{formatNumber(points)}</p>
+                <p className="truncate text-sm font-semibold" title={`${formatNumber(points)} ${pointName}`}>{formatCompactPointValue(points)}</p>
               </div>
             </Link>
 
@@ -775,7 +775,7 @@ export function SidebarUserCard({ user, createPostHref = "/write", siteName = "�
                   const withinMakeUpWindow = !earliestMakeUpDate || activeDate >= earliestMakeUpDate
                   const canMakeUp = !entry && isPast && Boolean(currentUser.checkInEnabled) && makeUpEnabled && withinMakeUpWindow
                   const cellTooltip = entry
-                    ? `${activeDate} 获得 ${formatNumber(entry.reward)} ${pointName}${entry.makeUpCost > 0 ? `，消耗 ${formatNumber(entry.makeUpCost)} ${pointName}` : ""}`
+                    ? `${activeDate} 获得 ${formatCompactPointValue(entry.reward)} ${pointName}${entry.makeUpCost > 0 ? `，消耗 ${formatCompactPointValue(entry.makeUpCost)} ${pointName}` : ""}`
                     : isToday
                       ? `${activeDate} 可签到，预计获得 ${activeRewardLabel}`
                       : !isPast || !currentUser.checkInEnabled
@@ -784,7 +784,7 @@ export function SidebarUserCard({ user, createPostHref = "/write", siteName = "�
                           ? "补签功能未开启"
                           : !withinMakeUpWindow
                             ? `当前仅允许补签 ${earliestMakeUpDate}（含）之后的历史日期`
-                            : `${activeDate} 可补签，需 ${formatNumber(calendarData?.makeUpPrice ?? effectiveMakeUpPrice)} ${pointName}。${makeUpPriceDescription}`
+                            : `${activeDate} 可补签，需 ${formatCompactPointValue(calendarData?.makeUpPrice ?? effectiveMakeUpPrice)} ${pointName}。${makeUpPriceDescription}`
 
                   const cellButton = (
                     <button

@@ -2,9 +2,13 @@ import { randomUUID } from "node:crypto"
 
 import { createManyTaskDefinitionRecords, countTaskDefinitions } from "@/db/task-definition-queries"
 import { TaskCategory, TaskConditionType, TaskCycleType, TaskDefinitionStatus } from "@/db/types"
+import { findSiteSettingsRecordForUpdate, updateSiteSettingsRecord } from "@/db/site-settings-write-queries"
 import { parseTaskRewardRangeInput } from "@/lib/task-reward"
 import { getServerSiteSettings } from "@/lib/site-settings"
+import { isRecord, parseAppStateRoot } from "@/lib/site-settings-app-state"
 import type { TaskDefinitionInput } from "@/lib/task-center-types"
+
+const TASK_CENTER_STATE_KEY = "taskCenter"
 
 function requireRange(value: unknown, fallback: string) {
   return parseTaskRewardRangeInput(value) ?? parseTaskRewardRangeInput(fallback) ?? { min: 0, max: 0 }
@@ -180,13 +184,59 @@ export function buildDefaultTaskDefinitionInputs(input: {
   ]
 }
 
-function buildTaskCode() {
-  return `task_${randomUUID().replace(/-/g, "").slice(0, 16)}`
+const DEFAULT_TASK_CODES = [
+  "task_default_first_check_in",
+  "task_default_first_post",
+  "task_default_first_reply",
+  "task_default_first_like",
+  "task_default_daily_check_in",
+  "task_default_daily_reply_once",
+  "task_default_daily_like_three",
+  "task_default_weekly_check_in_five",
+  "task_default_weekly_post_two",
+  "task_default_weekly_reply_distinct_posts",
+] as const
+
+function buildTaskCode(index: number) {
+  return DEFAULT_TASK_CODES[index] ?? `task_default_${randomUUID().replace(/-/g, "").slice(0, 16)}`
+}
+
+function hasTaskCenterBeenSeeded(appStateJson: string | null | undefined) {
+  const root = parseAppStateRoot(appStateJson)
+  const taskCenterState = root[TASK_CENTER_STATE_KEY]
+  return isRecord(taskCenterState) && taskCenterState.seeded === true
+}
+
+function markTaskCenterSeeded(appStateJson: string | null | undefined) {
+  const root = parseAppStateRoot(appStateJson)
+  const taskCenterState = root[TASK_CENTER_STATE_KEY]
+  root[TASK_CENTER_STATE_KEY] = {
+    ...(isRecord(taskCenterState) ? taskCenterState : {}),
+    seeded: true,
+  }
+  return JSON.stringify(root)
+}
+
+async function markTaskCenterSeededIfNeeded() {
+  const settings = await findSiteSettingsRecordForUpdate()
+  if (!settings || hasTaskCenterBeenSeeded(settings.appStateJson)) {
+    return
+  }
+
+  await updateSiteSettingsRecord(settings.id, {
+    appStateJson: markTaskCenterSeeded(settings.appStateJson),
+  })
 }
 
 export async function ensureTaskCenterSeeded(createdById: number | null = null) {
   const existingCount = await countTaskDefinitions()
   if (existingCount > 0) {
+    await markTaskCenterSeededIfNeeded()
+    return
+  }
+
+  const settings = await findSiteSettingsRecordForUpdate()
+  if (settings && hasTaskCenterBeenSeeded(settings.appStateJson)) {
     return
   }
 
@@ -196,8 +246,8 @@ export async function ensureTaskCenterSeeded(createdById: number | null = null) 
     checkInVip1RewardText: siteSettings.checkInVip1RewardText,
     checkInVip2RewardText: siteSettings.checkInVip2RewardText,
     checkInVip3RewardText: siteSettings.checkInVip3RewardText,
-  }).map((item) => ({
-    code: buildTaskCode(),
+  }).map((item, index) => ({
+    code: buildTaskCode(index),
     title: item.title,
     description: item.description || null,
     category: item.category,
@@ -222,4 +272,5 @@ export async function ensureTaskCenterSeeded(createdById: number | null = null) 
   }))
 
   await createManyTaskDefinitionRecords(seeds)
+  await markTaskCenterSeededIfNeeded()
 }

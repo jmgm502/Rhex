@@ -24,7 +24,7 @@ import { UserDisplayedBadges } from "@/components/user/user-displayed-badges"
 import { UserProfilePreviewCardTrigger } from "@/components/user/user-profile-preview-card-trigger"
 import { UserStatusBadge } from "@/components/user/user-status-badge"
 import { VipNameTooltip } from "@/components/vip/vip-name-tooltip"
-import { formatCompactNumber, formatNumber } from "@/lib/formatters"
+import { formatCompactNumber, formatCompactPointValue, formatNumber } from "@/lib/formatters"
 import type { PostStreamDisplayItem } from "@/lib/forum-post-stream-display"
 import { omitPostListPreviewMediaFromMarkdown, type PostListPreviewMedia } from "@/lib/post-list-media"
 import { getPostPath } from "@/lib/post-links"
@@ -273,7 +273,7 @@ function PostNoteActions({ item, postPath }: { item: PostStreamDisplayItem; post
             topSupporters={item.tipping.topSupporters}
           />
         ) : (
-          <IconActionLink href={postPath} icon={Gift} label={item.tipTotalPoints ? `打赏礼物 · 已收到 ${item.tipTotalPoints}` : "打赏礼物"} badge={item.tipCount} tone="gift" />
+          <IconActionLink href={postPath} icon={Gift} label={item.tipTotalPoints ? `打赏礼物 · 已收到 ${formatCompactPointValue(item.tipTotalPoints)}` : "打赏礼物"} badge={item.tipCount} tone="gift" />
         )}
       </div>
       <div className="flex items-center gap-1.5">

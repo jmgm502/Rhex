@@ -49,6 +49,7 @@ interface HomeSidebarPanelsProps {
   siteIconPath?: string | null
   currentUserSettings?: ComponentProps<typeof HomeSidebarCurrentUserCard>["settings"]
   stickyTopClass?: string
+  sticky?: boolean
   selfServeAdsSurface?: SelfServeAdsSidebarSurface | false
 }
 
@@ -79,7 +80,7 @@ export function buildHomeSidebarCurrentUserSettings(settings: SiteSettingsData):
   }
 }
 
-export async function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode = "SLUG", announcements = [], showAnnouncements = true, friendLinks = [], friendLinksEnabled = false, createPostHref, topPanels = [], middlePanels = [], bottomPanels = [], stats = null, siteName, siteDescription, siteLogoPath, siteIconPath, currentUserSettings, stickyTopClass = "top-20", selfServeAdsSurface = "global" }: HomeSidebarPanelsProps) {
+export async function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode = "SLUG", announcements = [], showAnnouncements = true, friendLinks = [], friendLinksEnabled = false, createPostHref, topPanels = [], middlePanels = [], bottomPanels = [], stats = null, siteName, siteDescription, siteLogoPath, siteIconPath, currentUserSettings, stickyTopClass = "top-20", sticky = true, selfServeAdsSurface = "global" }: HomeSidebarPanelsProps) {
   const selfServeAdsPanel = selfServeAdsSurface ? await getSelfServeAdsSidebarPanel(selfServeAdsSurface) : null
   const sidebarPanels = groupHomeSidebarPanels([
     ...topPanels,
@@ -89,7 +90,7 @@ export async function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode =
   ])
 
   return (
-    <div className={cn("home-sidebar-panels mobile-sidebar-stack sticky flex min-w-0 w-full max-w-full flex-col gap-4", stickyTopClass)}>
+    <div className={cn("home-sidebar-panels mobile-sidebar-stack flex min-w-0 w-full max-w-full flex-col gap-4", sticky && "sticky", sticky && stickyTopClass)}>
       {currentUserSettings ? (
         <HomeSidebarCurrentUserCard createPostHref={createPostHref} settings={currentUserSettings} />
       ) : (

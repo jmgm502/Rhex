@@ -4,6 +4,7 @@ import { apiSuccess, createAdminRouteHandler, readJsonBody } from "@/lib/api-rou
 import { revalidateSiteSettingsCache } from "@/lib/admin-site-settings-shared"
 import { revalidateTaskCheckInRewardCache } from "@/lib/task-check-in-display"
 import {
+  deleteAdminTaskDefinition,
   duplicateAdminTaskDefinition,
   getAdminTaskList,
   saveAdminTaskDefinition,
@@ -43,6 +44,17 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
     revalidatePath("/admin")
     revalidatePath("/admin/settings/vip/tasks")
     return apiSuccess(task, "任务状态已更新")
+  }
+
+  if (action === "delete") {
+    const id = typeof body.id === "string" ? body.id : ""
+    const result = await deleteAdminTaskDefinition(id)
+    revalidateSiteSettingsCache()
+    revalidateTaskCheckInRewardCache()
+    revalidatePath("/tasks")
+    revalidatePath("/admin")
+    revalidatePath("/admin/settings/vip/tasks")
+    return apiSuccess(result, "任务已删除")
   }
 
   const task = await saveAdminTaskDefinition(body)

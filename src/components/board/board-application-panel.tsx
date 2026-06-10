@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/rbutton"
 import { showConfirm } from "@/components/ui/alert-dialog"
 import { toast } from "@/components/ui/toast"
 import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
-import { formatDateTime, formatNumber } from "@/lib/formatters"
+import { formatCompactPointValue, formatDateTime } from "@/lib/formatters"
 
 interface BoardApplicationPanelProps {
   pointName: string
@@ -96,7 +96,7 @@ export function BoardApplicationPanel({ pointName, currentUser, zones, items, pe
 
     const confirmed = await showConfirm({
       title: "提取节点金库",
-      description: `确认把 ${board.name} 当前节点金库中的 ${formatNumber(board.treasuryPoints)} ${pointName}全部提取到你的账户吗？系统会写入${pointName}日志。`,
+      description: `确认把 ${board.name} 当前节点金库中的 ${formatCompactPointValue(board.treasuryPoints)} ${pointName}全部提取到你的账户吗？系统会写入${pointName}日志。`,
       confirmText: "确认提取",
     })
 
@@ -247,7 +247,7 @@ export function BoardApplicationPanel({ pointName, currentUser, zones, items, pe
                     {item.description ? <p className="mt-2 text-sm text-muted-foreground">{item.description}</p> : null}
                     {item.reason ? <p className="mt-2 text-sm text-muted-foreground">申请说明：{item.reason}</p> : null}
                     {item.reviewNote ? <p className="mt-2 text-sm text-muted-foreground">审核备注：{item.reviewNote}</p> : null}
-                    {item.board ? <p className="mt-2 text-sm text-muted-foreground">节点金库：{formatNumber(item.board.treasuryPoints)}</p> : null}
+                    {item.board ? <p className="mt-2 text-sm text-muted-foreground">节点金库：{formatCompactPointValue(item.board.treasuryPoints)}</p> : null}
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     {item.board ? (

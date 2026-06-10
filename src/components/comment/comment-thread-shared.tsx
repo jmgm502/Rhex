@@ -12,6 +12,7 @@ import type { SiteCommentItem, SiteCommentReplyItem } from "@/lib/comments"
 import { copyTextToClipboard } from "@/lib/clipboard"
 import type { CommentReplyTarget } from "@/lib/comment-reply-box-events"
 import { COMMENT_LOAD_MODE_PAGINATION, type CommentLoadMode } from "@/lib/comment-load-mode"
+import { formatCompactPointValue } from "@/lib/formatters"
 import type { MarkdownEmojiItem } from "@/lib/markdown-emoji"
 import type { PostRewardPoolEffectFeedback, PostRewardPoolEffectFeedbackBadge } from "@/lib/post-reward-effect-feedback"
 import { cn } from "@/lib/utils"
@@ -79,10 +80,10 @@ export function CommentRewardBadge({ rewardClaim, pointName = "积分" }: { rewa
   const isJackpot = rewardClaim.rewardMode === "JACKPOT"
 
   return (
-    <Tooltip enableMobileTap content={`${isJackpot ? "聚宝盆" : "红包"}奖励 +${rewardClaim.amount} ${pointName},财源滚滚!`}>
+    <Tooltip enableMobileTap content={`${isJackpot ? "聚宝盆" : "红包"}奖励 +${formatCompactPointValue(rewardClaim.amount)} ${pointName},财源滚滚!`}>
       <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold leading-none shadow-xs ring-1 ring-white/70 transition-transform duration-200 group-hover:-translate-y-0.5 motion-safe:animate-pulse", isJackpot ? "border-amber-200 bg-amber-50 text-amber-700 shadow-amber-100/80 dark:border-amber-400/20 dark:bg-amber-500/12 dark:text-amber-200" : "border-rose-200 bg-rose-50 text-rose-600 shadow-rose-100/80 dark:border-rose-400/20 dark:bg-rose-500/12 dark:text-rose-200")}>
         <PostRewardPoolIcon mode={rewardClaim.rewardMode} className="h-3.5 w-3.5" />
-        <span>+{rewardClaim.amount}</span>
+        <span>+{formatCompactPointValue(rewardClaim.amount)}</span>
       </span>
     </Tooltip>
   )
@@ -93,10 +94,10 @@ export function CommentJackpotDepositBadge({ feedback, pointName = "积分" }: {
   if (typeof jackpotDepositPoints !== "number" || jackpotDepositPoints < 0) return null
 
   return (
-    <Tooltip enableMobileTap content={`添砖加瓦:此评论为聚宝盆加了 ${jackpotDepositPoints} ${pointName}`}>
+    <Tooltip enableMobileTap content={`添砖加瓦:此评论为聚宝盆加了 ${formatCompactPointValue(jackpotDepositPoints)} ${pointName}`}>
       <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold leading-none text-emerald-700 shadow-xs dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
         <Image src="/apps/redpacked/z.svg" alt="" width={14} height={14} className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <span>+ {jackpotDepositPoints}</span>
+        <span>+ {formatCompactPointValue(jackpotDepositPoints)}</span>
       </span>
     </Tooltip>
   )

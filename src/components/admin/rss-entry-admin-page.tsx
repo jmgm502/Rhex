@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 
+import { AdminPaginationBar } from "@/components/admin/admin-pagination-bar"
 import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/rbutton"
 import { showConfirm } from "@/components/ui/alert-dialog"
@@ -258,7 +259,7 @@ export function RssEntryAdminPage({ initialData }: RssEntryAdminPageProps) {
               <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="h-4 w-4 rounded border-border" />
               <span>全选本页</span>
             </label>
-            <span className="text-sm text-muted-foreground">第 {initialData.pagination.page} / {initialData.pagination.totalPages} 页，共 {initialData.pagination.total} 条</span>
+            <span className="text-sm text-muted-foreground">已选 {selectedCount} 条</span>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" className="h-8 rounded-full px-3 text-xs" disabled={selectedCount === 0 || isPending} onClick={() => batchReview("APPROVED")}>批量通过</Button>
@@ -266,6 +267,14 @@ export function RssEntryAdminPage({ initialData }: RssEntryAdminPageProps) {
             <Button type="button" variant="outline" className="h-8 rounded-full border-rose-200 px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700" disabled={selectedCount === 0 || isPending} onClick={() => void batchDelete()}>批量删除</Button>
           </div>
         </div>
+        {initialData.entries.length > 0 ? (
+          <AdminPaginationBar
+            pagination={initialData.pagination}
+            buildPageHref={buildPageHref}
+            itemLabel="条采集数据"
+            className="border-b border-border px-4 py-3"
+          />
+        ) : null}
 
         {initialData.entries.length === 0 ? <div className="px-6 py-12 text-center text-sm text-muted-foreground">当前筛选条件下没有采集数据。</div> : null}
 
@@ -312,18 +321,12 @@ export function RssEntryAdminPage({ initialData }: RssEntryAdminPageProps) {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-xs text-muted-foreground">
-          <div className="flex flex-wrap items-center gap-3">
-            <span>第 {initialData.pagination.page} / {initialData.pagination.totalPages} 页</span>
-            <span>每页 {initialData.pagination.pageSize} 条</span>
-            <span>共 {initialData.pagination.total} 条采集数据</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href={initialData.pagination.hasPrevPage ? buildPageHref(initialData.pagination.page - 1) : "#"} aria-disabled={!initialData.pagination.hasPrevPage} className={initialData.pagination.hasPrevPage ? "inline-flex h-8 items-center justify-center rounded-full border border-border bg-card px-3 font-medium transition-colors hover:bg-accent hover:text-accent-foreground" : "pointer-events-none inline-flex h-8 items-center justify-center rounded-full border border-border px-3 opacity-40"}>上一页</Link>
-            <span className="inline-flex h-8 items-center rounded-full bg-accent px-3 font-medium text-foreground">{initialData.pagination.page}</span>
-            <Link href={initialData.pagination.hasNextPage ? buildPageHref(initialData.pagination.page + 1) : "#"} aria-disabled={!initialData.pagination.hasNextPage} className={initialData.pagination.hasNextPage ? "inline-flex h-8 items-center justify-center rounded-full border border-border bg-card px-3 font-medium transition-colors hover:bg-accent hover:text-accent-foreground" : "pointer-events-none inline-flex h-8 items-center justify-center rounded-full border border-border px-3 opacity-40"}>下一页</Link>
-          </div>
-        </div>
+        <AdminPaginationBar
+          pagination={initialData.pagination}
+          buildPageHref={buildPageHref}
+          itemLabel="条采集数据"
+          className="border-t border-border px-4 py-3"
+        />
       </div>
 
       <Modal

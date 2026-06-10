@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { toast } from "@/components/ui/toast"
 import { copyTextToClipboard } from "@/lib/clipboard"
+import { formatCompactPointValue } from "@/lib/formatters"
 import { addPostReplyCreatedListener } from "@/lib/post-discussion-events"
 
 function formatFileSize(fileSize: number | null | undefined) {
@@ -306,7 +307,7 @@ export function PostAttachmentList({ postId, attachments, pointName }: { postId:
                   ) : attachment.canPurchase ? (
                     <Button type="button" className="h-9 px-4 text-xs" onClick={() => void handlePurchase(attachment)} disabled={isPending}>
                       {isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-                      支付 {attachment.pointsCost} {pointName}
+                      支付 {formatCompactPointValue(attachment.pointsCost)} {pointName}
                     </Button>
                   ) : (
                     <Button type="button" variant="outline" className="h-9 px-4 text-xs" disabled>

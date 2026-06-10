@@ -279,6 +279,15 @@ export function BackgroundWorkerAdminPage({ data, pageQueryEntries = [] }: Backg
               <div className="text-xs text-muted-foreground">
                 第 {formatNumber(data.deadLetters.pagination.page)} / {formatNumber(data.deadLetters.pagination.totalPages)} 页，每页 {formatNumber(data.deadLetters.pagination.pageSize)} 条
               </div>
+              {data.deadLetters.pagination.totalPages > 1 ? (
+                <PageNumberPagination
+                  page={data.deadLetters.pagination.page}
+                  totalPages={data.deadLetters.pagination.totalPages}
+                  hasPrevPage={data.deadLetters.pagination.hasPrevPage}
+                  hasNextPage={data.deadLetters.pagination.hasNextPage}
+                  buildHref={(page) => buildWorkerPageHref("deadLetterPage", page, pageQueryEntries)}
+                />
+              ) : null}
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
@@ -379,6 +388,15 @@ function BackgroundJobDelayedList({ data, pageQueryEntries = [] }: BackgroundWor
       <div className="text-xs text-muted-foreground">
         第 {formatNumber(data.queue.delayedJobs.pagination.page)} / {formatNumber(data.queue.delayedJobs.pagination.totalPages)} 页，每页 {formatNumber(data.queue.delayedJobs.pagination.pageSize)} 条
       </div>
+      {data.queue.delayedJobs.pagination.totalPages > 1 ? (
+        <PageNumberPagination
+          page={data.queue.delayedJobs.pagination.page}
+          totalPages={data.queue.delayedJobs.pagination.totalPages}
+          hasPrevPage={data.queue.delayedJobs.pagination.hasPrevPage}
+          hasNextPage={data.queue.delayedJobs.pagination.hasNextPage}
+          buildHref={(page) => buildWorkerPageHref("delayedPage", page, pageQueryEntries)}
+        />
+      ) : null}
       {data.queue.delayedJobs.items.map((item) => (
         <div key={item.id} className="rounded-2xl border border-border bg-background/70 px-4 py-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -429,6 +447,15 @@ function BackgroundJobExecutionLogList({ data, pageQueryEntries = [] }: Backgrou
       <div className="text-xs text-muted-foreground">
         第 {formatNumber(data.executionLogs.pagination.page)} / {formatNumber(data.executionLogs.pagination.totalPages)} 页，每页 {formatNumber(data.executionLogs.pagination.pageSize)} 条
       </div>
+      {data.executionLogs.pagination.totalPages > 1 ? (
+        <PageNumberPagination
+          page={data.executionLogs.pagination.page}
+          totalPages={data.executionLogs.pagination.totalPages}
+          hasPrevPage={data.executionLogs.pagination.hasPrevPage}
+          hasNextPage={data.executionLogs.pagination.hasNextPage}
+          buildHref={(page) => buildWorkerPageHref("logPage", page, pageQueryEntries)}
+        />
+      ) : null}
       {data.executionLogs.items.map((item) => (
         <div key={item.id} className="rounded-2xl border border-border bg-background/70 px-4 py-4">
           <div className="flex flex-wrap items-start justify-between gap-3">

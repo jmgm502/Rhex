@@ -45,7 +45,7 @@ const HTML_CODE_BLOCK_LANGUAGE_ALIASES = new Set(["html", "htm"])
 const LINK_CANDIDATE_PATH_CHARS = "A-Za-z0-9\\p{L}\\p{N}\\p{M}\\-._~/?#\\[\\]@!$&*+,;=%"
 const LINK_CANDIDATE_PATH_SEGMENT = `[/?#][${LINK_CANDIDATE_PATH_CHARS}]*`
 const LINK_CANDIDATE_PATTERN = new RegExp(
-  `https?:\\/\\/[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::\\d{1,5})?(?:${LINK_CANDIDATE_PATH_SEGMENT})?|(?:www\\.)?[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+(?::\\d{1,5})?(?:${LINK_CANDIDATE_PATH_SEGMENT})?`,
+  `https?:\\/\\/[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::\\d{1,5})?(?:${LINK_CANDIDATE_PATH_SEGMENT})?`,
   "giu",
 )
 
@@ -92,6 +92,7 @@ interface LinkifyMatch {
 
 interface LinkifyLike {
   match(input: string): LinkifyMatch[] | null
+  set(options: { fuzzyLink?: boolean; fuzzyEmail?: boolean; fuzzyIP?: boolean }): LinkifyLike
 }
 
 interface MarkdownItWithLinkifyCore extends MarkdownIt {
@@ -843,7 +844,9 @@ function createMarkdownRenderer(emojiItems: MarkdownEmojiItem[]) {
       return `<pre class="md-code-block"><div class="md-code-header"><span>${safeLanguage || "text"}</span></div><code class="language-${safeLanguage}">${safeCode}</code></pre>`
     },
   })
-  fixCjkAutoLinkBoundaries(md as MarkdownItWithLinkifyCore)
+  const mdWithLinkify = md as MarkdownItWithLinkifyCore
+  mdWithLinkify.linkify.set({ fuzzyLink: false })
+  fixCjkAutoLinkBoundaries(mdWithLinkify)
 
   md.use(markdownItAbbr)
   md.use(markdownItDeflist)

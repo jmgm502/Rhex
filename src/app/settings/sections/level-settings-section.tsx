@@ -39,6 +39,7 @@ export function LevelSettingsSection({ data }: { data: SettingsPageData }) {
                 name={levelView.currentLevel.name}
                 color={levelView.currentLevel.color}
                 icon={levelView.currentLevel.icon}
+                size="large"
               />
             </div>
           </div>

@@ -8,7 +8,7 @@ import { LevelIcon } from "@/components/level-icon"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "@/components/ui/toast"
 import { getAvatarUrl } from "@/lib/avatar"
-import { formatCompactNumber, formatNumber, formatRelativeTime } from "@/lib/formatters"
+import { formatCompactNumber, formatCompactPointValue, formatNumber, formatRelativeTime } from "@/lib/formatters"
 import type { RssEntrySupportSummary } from "@/lib/rss-interactions"
 import type { RssUniverseFeedPageData } from "@/lib/rss-public-feed"
 import { cn } from "@/lib/utils"
@@ -205,8 +205,8 @@ export function RssUniverseFeedView({
                       <PopoverContent align="start" sideOffset={8} className="z-[240] w-max min-w-72 max-w-[calc(100vw-1rem)] rounded-[22px] p-5 shadow-xl sm:max-w-[34rem]">
                         <div className="flex max-w-full flex-col gap-4">
                           <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
-                            <span>余额 {formatNumber(points)} {support.pointName}</span>
-                            <span>已消耗 {formatNumber(item.tipTotalPoints)}</span>
+                            <span>余额 {formatCompactPointValue(points)} {support.pointName}</span>
+                            <span>已消耗 {formatCompactPointValue(item.tipTotalPoints)}</span>
                           </div>
 
                           {support.gifts.length > 0 ? (
@@ -218,10 +218,10 @@ export function RssUniverseFeedView({
                                   className="inline-flex h-14 min-w-20 items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-lg transition-colors hover:bg-accent disabled:opacity-60"
                                   disabled={isPending}
                                   onClick={() => handleTip(item, { amount: gift.price, giftId: gift.id })}
-                                  title={`${gift.name} · ${gift.price} ${support.pointName}`}
+                                  title={`${gift.name} · ${formatCompactPointValue(gift.price)} ${support.pointName}`}
                                 >
                                   <LevelIcon icon={gift.icon} className="size-5" emojiClassName="text-xl leading-none" svgClassName="[&>svg]:block [&>svg]:size-full" title={gift.name} />
-                                  <span className="text-base">{gift.price}</span>
+                                  <span className="text-base">{formatCompactPointValue(gift.price)}</span>
                                 </button>
                               ))}
                             </div>

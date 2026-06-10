@@ -17,7 +17,7 @@ import { Slider } from "@/components/ui/slider"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "@/components/ui/toast"
 import { buildLoginHrefWithRedirect, getCurrentBrowserAuthRedirectTarget } from "@/lib/auth-redirect"
-import { formatCompactNumber, formatDateTime, formatNumber } from "@/lib/formatters"
+import { formatCompactNumber, formatCompactPointValue, formatDateTime, formatNumber } from "@/lib/formatters"
 import type { SitePostItem } from "@/lib/posts"
 import { cn } from "@/lib/utils"
 
@@ -205,12 +205,12 @@ export function PostAuctionPanel({
                   </div>
                   {!isSealedBid ? (
                     <Badge variant="outline" className="shrink-0 rounded-full bg-background/80">
-                      {headlineLabel} {formatNumber(headlineAmount)} {pointName}
+                      {headlineLabel} {formatCompactPointValue(headlineAmount)} {pointName}
                     </Badge>
                   ) : null}
                   {!isSealedBid && !timing.hasEnded ? (
                     <Badge variant="outline" className="shrink-0 rounded-full bg-background/80">
-                      最低下一口 {formatNumber(auction.minNextBidAmount)} {pointName}
+                      最低下一口 {formatCompactPointValue(auction.minNextBidAmount)} {pointName}
                     </Badge>
                   ) : null}
                   {viewerStateLabel ? (
@@ -236,7 +236,7 @@ export function PostAuctionPanel({
                     </div>
                     {auction.finalPrice ? (
                       <Badge variant="outline" className="rounded-full border-amber-300/80 bg-background/70 text-amber-950 dark:border-amber-300/25 dark:bg-white/8 dark:text-amber-50">
-                        成交价 {formatNumber(auction.finalPrice)} {pointName}
+                        成交价 {formatCompactPointValue(auction.finalPrice)} {pointName}
                       </Badge>
                     ) : null}
                   </div>
@@ -303,7 +303,7 @@ export function PostAuctionPanel({
                             : "bg-secondary text-muted-foreground",
                         )}
                       >
-                        {formatNumber(participant.amount)}
+                        {formatCompactPointValue(participant.amount)}
                       </span>
                     ) : null}
                   </div>
@@ -356,8 +356,8 @@ export function PostAuctionPanel({
           isSealedBid
             ? `当前为${auction.pricingRuleLabel}，每位用户只能出价一次，请谨慎填写。`
             : isLeadingOpenAuctionBidder
-              ? `你当前处于领先位置，如需继续拉开差距，请输入新的加价金额。当前最低有效出价为 ${formatNumber(auction.minNextBidAmount)} ${pointName}。`
-              : `请输入你的出价金额。当前最低有效出价为 ${formatNumber(auction.minNextBidAmount)} ${pointName}。`
+              ? `你当前处于领先位置，如需继续拉开差距，请输入新的加价金额。当前最低有效出价为 ${formatCompactPointValue(auction.minNextBidAmount)} ${pointName}。`
+              : `请输入你的出价金额。当前最低有效出价为 ${formatCompactPointValue(auction.minNextBidAmount)} ${pointName}。`
         }
         size="md"
         closeDisabled={submitting}
@@ -375,7 +375,7 @@ export function PostAuctionPanel({
         <div className="space-y-5">
           <div className="text-center">
             <p className="text-[2.2rem] font-semibold tracking-tight text-foreground">
-              {formatNumber(bidValue)}
+              {formatCompactPointValue(bidValue)}
               <span className="ml-2 text-base font-medium text-muted-foreground">{pointName}</span>
             </p>
           </div>
@@ -393,8 +393,8 @@ export function PostAuctionPanel({
               }}
             />
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="font-medium tabular-nums">{formatNumber(sliderMin)}</span>
-              <span className="font-medium tabular-nums">{formatNumber(sliderMax)}</span>
+              <span className="font-medium tabular-nums">{formatCompactPointValue(sliderMin)}</span>
+              <span className="font-medium tabular-nums">{formatCompactPointValue(sliderMax)}</span>
             </div>
             <Input
               type="number"
@@ -474,7 +474,7 @@ export function PostAuctionPanel({
                       {item.userName}
                     </Link>
                   </TableCell>
-                  {showBidAmounts ? <TableCell className="text-right">{item.amount !== null ? `${formatNumber(item.amount)} ${pointName}` : "-"}</TableCell> : null}
+                  {showBidAmounts ? <TableCell className="text-right">{item.amount !== null ? `${formatCompactPointValue(item.amount)} ${pointName}` : "-"}</TableCell> : null}
                 </TableRow>
               ))}
             </TableBody>
@@ -504,7 +504,7 @@ export function PostAuctionWinnerContent({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {auction.finalPrice ? (
-          <Badge variant="secondary" className="rounded-full">成交价 {formatNumber(auction.finalPrice)} {pointName}</Badge>
+          <Badge variant="secondary" className="rounded-full">成交价 {formatCompactPointValue(auction.finalPrice)} {pointName}</Badge>
         ) : null}
         <CollapsibleTrigger
           render={(
@@ -542,7 +542,7 @@ export function PostAuctionWinnerContent({
           </div>
           {auction.winnerOnlyContentPreview ? <p className="mt-2">预告：{auction.winnerOnlyContentPreview}</p> : null}
           {auction.finalPrice ? <Separator className="my-3" /> : null}
-          {auction.finalPrice ? <p>当前成交价：{formatNumber(auction.finalPrice)} {pointName}</p> : null}
+          {auction.finalPrice ? <p>当前成交价：{formatCompactPointValue(auction.finalPrice)} {pointName}</p> : null}
         </div>
       )}
     </div>
@@ -655,7 +655,7 @@ function resolveAuctionNoticeText({
   }
 
   if (!timing.hasEnded) {
-    return `新出价至少需达到 ${formatNumber(auction.minNextBidAmount)} ${pointName}，同价按时间先后决定优先顺序。`
+    return `新出价至少需达到 ${formatCompactPointValue(auction.minNextBidAmount)} ${pointName}，同价按时间先后决定优先顺序。`
   }
 
   return null
@@ -730,7 +730,7 @@ function resolveViewerStateLabel(auction: AuctionSummary, pointName: string, isS
   }
 
   if (auction.viewerFrozenAmount && auction.viewerFrozenAmount > 0) {
-    return `已冻结 ${formatNumber(auction.viewerFrozenAmount)} ${pointName}`
+    return `已冻结 ${formatCompactPointValue(auction.viewerFrozenAmount)} ${pointName}`
   }
 
   if (!auction.viewerStatus) {

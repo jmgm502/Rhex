@@ -13,7 +13,7 @@ import { getHomeAnnouncements } from "@/lib/announcements"
 import { getCurrentUser } from "@/lib/auth"
 import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
 import { getBoards } from "@/lib/boards"
-import { formatCompactNumber, formatNumber } from "@/lib/formatters"
+import { formatCompactNumber, formatCompactPointValue, formatNumber } from "@/lib/formatters"
 import { getHomeSidebarHotTopics, resolveSidebarUser } from "@/lib/home-sidebar"
 import { readSearchParam } from "@/lib/search-params"
 import { getSiteSettings } from "@/lib/site-settings"
@@ -82,7 +82,7 @@ export default async function VerificationDetailPage(props: VerificationDetailPa
     ? settingsHref
     : buildLoginHrefWithRedirect(settingsHref)
   const applicationCost = verification.pointsCost > 0
-    ? `${formatNumber(verification.pointsCost)} ${settings.pointName}`
+    ? `${formatCompactPointValue(verification.pointsCost)} ${settings.pointName}`
     : "免费申请"
 
   return (

@@ -376,6 +376,10 @@ const actionHookCatalog: readonly AddonExtensionPointCatalogEntry[] = [
   { name: "user.update.after", kind: "action", category: "user", scope: "service", summary: "用户资料更新后执行副作用逻辑（含最新 profile 快照）。", returns: "void" },
   { name: "user.notification-settings.update.before", kind: "action", category: "user", scope: "service", summary: "用户通知设置写入前执行副作用或拦截逻辑。", returns: "void" },
   { name: "user.notification-settings.update.after", kind: "action", category: "user", scope: "service", summary: "用户通知设置更新后执行副作用逻辑。", returns: "void" },
+  { name: "sms.verification-code.send.before", kind: "action", category: "sms", scope: "service", summary: "短信验证码发送前执行副作用或拦截逻辑（payload 含 phone/purpose/requestIp/userId）。", returns: "void" },
+  { name: "sms.verification-code.send.after", kind: "action", category: "sms", scope: "service", summary: "短信验证码发送后执行副作用逻辑（payload 含 provider/handledByProvider/expiresAt）。", returns: "void" },
+  { name: "sms.verification-code.verify.before", kind: "action", category: "sms", scope: "service", summary: "短信验证码校验前执行副作用或拦截逻辑（payload 含 phone/purpose/requestIp/userId）。", returns: "void" },
+  { name: "sms.verification-code.verify.after", kind: "action", category: "sms", scope: "service", summary: "短信验证码校验后执行副作用逻辑（payload 含 provider/handledByProvider/verifiedAt）。", returns: "void" },
   { name: "addon.config.changed.before", kind: "action", category: "system", scope: "service", summary: "插件配置写入前执行副作用或拦截逻辑。", returns: "void" },
   { name: "addon.config.changed.after", kind: "action", category: "system", scope: "service", summary: "插件配置变更后执行副作用逻辑。", returns: "void" },
   // ─── v2 扩展 hook ───
@@ -464,6 +468,7 @@ const asyncWaterfallHookCatalog: readonly AddonExtensionPointCatalogEntry[] = [
   { name: "post.content.render", kind: "asyncWaterfall", category: "post", scope: "service", summary: "串行改写帖子正文渲染后的 HTML（代码高亮、LaTeX、Mermaid、表格美化等）。", returns: "string" },
   { name: "points.settlement.resolve", kind: "asyncWaterfall", category: "points", scope: "service", summary: "积分结算写入前的可接管决策；插件可在当前事务内处理指定 scopeKey 并标记 handled。", returns: "AddonPointSettlementValue" },
   { name: "post.tip.summary", kind: "asyncWaterfall", category: "points", scope: "service", summary: "串行改写帖子 / 评论打赏摘要，可调整余额展示、货币名与可用状态。", returns: "AddonTipSummaryValue" },
+  { name: "user.profile.introduction.permission", kind: "asyncWaterfall", category: "user", scope: "service", summary: "串行收紧个人介绍编辑/查看权限；插件可按用户组、VIP、认证、勋章等返回 allowed: false。", returns: "AddonUserProfileIntroductionPermissionValue" },
 ] as const
 
 export const ADDON_EXTENSION_POINT_CATALOG: readonly AddonExtensionPointCatalogEntry[] = [

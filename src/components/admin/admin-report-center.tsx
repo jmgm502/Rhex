@@ -11,10 +11,11 @@ import {
 import { useState } from "react"
 
 import { AdminActionForm } from "@/components/admin/admin-action-form"
+import { AdminPaginationBar } from "@/components/admin/admin-pagination-bar"
 import { AdminReportDetailModal } from "@/components/admin/admin-report-detail-modal"
 import { AdminSummaryStrip } from "@/components/admin/admin-summary-strip"
 import { Badge } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardAction,
@@ -41,7 +42,6 @@ import {
 } from "@/components/ui/table"
 import { serializeDate } from "@/lib/formatters"
 import type { AdminReportListResult } from "@/lib/admin-report-management"
-import { cn } from "@/lib/utils"
 
 const statusLabelMap: Record<AdminReportListResult["reports"][number]["status"], string> = {
   PENDING: "待处理",
@@ -108,6 +108,14 @@ export function AdminReportCenter({ data }: { data: AdminReportListResult }) {
             </form>
           </CardAction>
         </CardHeader>
+        {data.reports.length > 0 ? (
+          <AdminPaginationBar
+            pagination={data.pagination}
+            buildPageHref={buildPageHref}
+            itemLabel="条举报"
+            className="border-b border-border px-4 py-3"
+          />
+        ) : null}
         <CardContent className="px-0 py-0">
           {data.reports.length === 0 ? (
             <div className="px-6 py-12 text-center text-sm text-muted-foreground">
@@ -211,43 +219,15 @@ export function AdminReportCenter({ data }: { data: AdminReportListResult }) {
             </Table>
           )}
         </CardContent>
-        <CardFooter className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span>第 {data.pagination.page} / {data.pagination.totalPages} 页</span>
-            <span>每页 {data.pagination.pageSize} 条</span>
-            <span>共 {data.pagination.total} 条举报</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <PaginationLink href={data.pagination.hasPrevPage ? buildPageHref(data.pagination.page - 1) : "#"} disabled={!data.pagination.hasPrevPage}>上一页</PaginationLink>
-            <Badge variant="secondary" className="h-8 rounded-full px-3 text-sm">{data.pagination.page}</Badge>
-            <PaginationLink href={data.pagination.hasNextPage ? buildPageHref(data.pagination.page + 1) : "#"} disabled={!data.pagination.hasNextPage}>下一页</PaginationLink>
-          </div>
+        <CardFooter>
+          <AdminPaginationBar
+            pagination={data.pagination}
+            buildPageHref={buildPageHref}
+            itemLabel="条举报"
+            className="w-full"
+          />
         </CardFooter>
       </Card>
     </div>
-  )
-}
-
-function PaginationLink({
-  href,
-  disabled,
-  children,
-}: {
-  href: string
-  disabled: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <Link
-      href={href}
-      aria-disabled={disabled}
-      className={cn(
-        buttonVariants({ variant: "outline", size: "default" }),
-        "rounded-full px-3 text-xs",
-        disabled ? "pointer-events-none opacity-40" : ""
-      )}
-    >
-      {children}
-    </Link>
   )
 }

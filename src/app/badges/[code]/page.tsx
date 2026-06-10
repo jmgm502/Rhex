@@ -15,6 +15,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
 import { describeBadgeRule, getBadgeCenterData } from "@/lib/badges"
 import { getBoards } from "@/lib/boards"
+import { formatCompactPointValue } from "@/lib/formatters"
 import { getHomeSidebarHotTopics, resolveSidebarUser } from "@/lib/home-sidebar"
 import { getSiteSettings } from "@/lib/site-settings"
 import { getZones } from "@/lib/zones"
@@ -87,7 +88,7 @@ export default async function BadgeDetailPage(props: BadgeDetailPageProps) {
     : eligibleNow
       ? badge.eligibility.purchaseRequired
         ? badge.eligibility.canAffordPurchase
-          ? `已达成，领取需支付 ${badge.eligibility.pointsCost} ${settings.pointName}`
+          ? `已达成，领取需支付 ${formatCompactPointValue(badge.eligibility.pointsCost)} ${settings.pointName}`
           : `条件已达成，但当前 ${settings.pointName} 不足`
         : "你当前已满足领取条件"
       : "你当前还未满足领取条件"
@@ -151,7 +152,7 @@ export default async function BadgeDetailPage(props: BadgeDetailPageProps) {
                     </p>
                     <div className="mt-6 grid gap-3 text-left sm:grid-cols-3">
                       <BadgeStatCard label="领取人数" value={`${badge.grantedUserCount ?? 0} 人`} />
-                      <BadgeStatCard label="领取成本" value={badge.pointsCost > 0 ? `${badge.pointsCost} ${settings.pointName}` : "免费领取"} />
+                      <BadgeStatCard label="领取成本" value={badge.pointsCost > 0 ? `${formatCompactPointValue(badge.pointsCost)} ${settings.pointName}` : "免费领取"} />
                       <BadgeStatCard
                         label="领取条件"
                         value={badgeRules.length === 0 ? (

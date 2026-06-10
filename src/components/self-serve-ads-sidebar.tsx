@@ -1,8 +1,8 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 
+import { SelfServeAdsGrid } from "@/components/self-serve-ads-grid"
 import type { SelfServeAdItem } from "@/lib/self-serve-ads.shared"
 
 
@@ -35,10 +35,6 @@ function isSidebarPanelData(value: unknown): value is SelfServeAdsSidebarPanelDa
     && !!payload.prices
 }
 
-function buildPurchaseHref(slotType: "IMAGE" | "TEXT", slotIndex: number) {
-  return `/funs/self-serve-ads/purchase?slotType=${slotType}&slotIndex=${slotIndex}`
-}
-
 export function SelfServeAdsSidebar({ panelData }: SelfServeAdsSidebarProps) {
   const resolvedPanelData = isSidebarPanelData(panelData) ? panelData : null
   if (!resolvedPanelData) return null
@@ -53,31 +49,11 @@ export function SelfServeAdsSidebar({ panelData }: SelfServeAdsSidebarProps) {
         <Link href="/funs/self-serve-ads" className="shrink-0 text-[11px] text-muted-foreground transition hover:text-foreground">说明</Link>
       </div>
 
-      <div className="space-y-2">
-        {resolvedPanelData.imageSlots.map((item) => item.isPlaceholder ? (
-          <Link key={item.id} href={buildPurchaseHref("IMAGE", item.slotIndex)} className="flex h-[52px] w-full items-center justify-center rounded-[16px] border border-dashed border-border bg-background text-xs font-medium text-muted-foreground transition hover:border-foreground/20 hover:text-foreground">
-            购买图片广告位
-          </Link>
-        ) : (
-          <a key={item.id} href={item.linkUrl ?? "#"} target="_blank" rel="noreferrer" className="  rounded-[16px] block overflow-hidden border border-border bg-background transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5">
-            <div className="h-[58px] w-full bg-muted/20">
-              {item.imageUrl ? <Image src={item.imageUrl} alt={`图片广告位 ${item.slotIndex + 1}`} width={320} height={58} unoptimized className="h-[58px] w-full" /> : null}
-            </div>
-          </a>
-        ))}
-      </div>
-
-      <div className="mt-2.5 grid grid-cols-2 gap-2">
-        {resolvedPanelData.textSlots.map((item) => item.isPlaceholder ? (
-          <Link key={item.id} href={buildPurchaseHref("TEXT", item.slotIndex)} className="flex py-2 items-center justify-center rounded-[12px] border border-dashed border-border bg-background px-3 text-[11px] text-muted-foreground transition hover:border-foreground/20 hover:text-foreground">
-            购买广告位
-          </Link>
-        ) : (
-          <a key={item.id} href={item.linkUrl ?? "#"} target="_blank" rel="noreferrer" className="truncate rounded-[12px] px-3 py-2 text-center text-[11px] font-medium transition hover:opacity-90" style={{ color: item.textColor ?? "#0f172a", backgroundColor: item.backgroundColor ?? "#f8fafc" }}>
-            {item.title}
-          </a>
-        ))}
-      </div>
+      <SelfServeAdsGrid
+        imageSlots={resolvedPanelData.imageSlots}
+        textSlots={resolvedPanelData.textSlots}
+        placeholderLabel={resolvedPanelData.placeholderLabel}
+      />
     </section>
   )
 }

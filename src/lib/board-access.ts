@@ -43,7 +43,7 @@ type BoardAccessUser = {
   verificationApplications?: Array<{ typeId: string }> | null
 }
 
-export function checkBoardPermission(user: BoardAccessUser | null, settings: ReturnType<typeof resolveBoardSettings>, action: "view" | "post" | "reply") {
+export function checkBoardPermission(user: BoardAccessUser | null, settings: ReturnType<typeof resolveBoardSettings>, action: "view" | "post" | "reply", pointName?: string | null) {
   return canUserAccess(user ? {
     ...user,
     role: user.role ?? "USER",
@@ -51,7 +51,7 @@ export function checkBoardPermission(user: BoardAccessUser | null, settings: Ret
     vipExpiresAt: user.vipExpiresAt ?? null,
     grantedBadgeIds: user.userBadges?.map((item) => item.badgeId) ?? [],
     approvedVerificationTypeIds: user.verificationApplications?.map((item) => item.typeId) ?? [],
-  } : null, settings, action)
+  } : null, settings, action, pointName)
 }
 
 

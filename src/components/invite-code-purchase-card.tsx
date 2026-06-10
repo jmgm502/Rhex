@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
-import { formatDateTime, formatNumber } from "@/lib/formatters"
+import { formatCompactPointValue, formatDateTime, formatNumber } from "@/lib/formatters"
 
 const INVITE_CODE_PAGE_SIZE = 10
 
@@ -140,13 +140,13 @@ export function InviteCodePurchaseCard({ enabled, price, priceDescription, point
       <div className="space-y-3 rounded-xl border border-border px-4 py-4">
         <div>
           <p className="font-medium">购买邀请码</p>
-          <p className="mt-1 text-sm text-muted-foreground">每个邀请码售价 {formatNumber(price)} {pointName}，购买后可分享给好友注册使用。</p>
+          <p className="mt-1 text-sm text-muted-foreground">每个邀请码售价 {formatCompactPointValue(price)} {pointName}，购买后可分享给好友注册使用。</p>
           {priceDescription ? <p className="mt-1 text-xs text-muted-foreground">{priceDescription}</p> : null}
         </div>
 
         <div className="flex flex-wrap gap-3">
           <Button type="button" onClick={handlePurchase} disabled={loading} className="rounded-full">
-            {loading ? "购买中..." : `花费 ${formatNumber(price)} ${pointName} 购买邀请码`}
+            {loading ? "购买中..." : `花费 ${formatCompactPointValue(price)} ${pointName} 购买邀请码`}
           </Button>
           <Button type="button" variant="outline" onClick={handleOpenHistory} disabled={historyLoading} className="rounded-full">
             {historyLoading && !historyOpen ? "加载中..." : "我购买的邀请码"}
@@ -159,7 +159,7 @@ export function InviteCodePurchaseCard({ enabled, price, priceDescription, point
           </p>
         ) : null}
         {latestBalance !== null ? (
-          <p className="text-sm text-muted-foreground">当前余额已更新为 <span className="font-semibold text-foreground">{formatNumber(latestBalance)}</span> {pointName}</p>
+          <p className="text-sm text-muted-foreground">当前余额已更新为 <span className="font-semibold text-foreground">{formatCompactPointValue(latestBalance)}</span> {pointName}</p>
         ) : null}
       </div>
 

@@ -95,6 +95,7 @@ export function mergeSiteBrandingSettings(
 export function resolveUserProfileDisplaySettings(options: {
   appStateJson?: string | null
   ipLocationEnabledFallback?: boolean
+  introductionEnabledFallback?: boolean
 } = {}): UserProfileDisplaySettings {
   const siteSettingsState = readSiteSettingsState(options.appStateJson)
   const userProfile = isRecord(siteSettingsState.userProfile)
@@ -106,6 +107,10 @@ export function resolveUserProfileDisplaySettings(options: {
       typeof userProfile.ipLocationEnabled === "boolean"
         ? userProfile.ipLocationEnabled
         : options.ipLocationEnabledFallback ?? false,
+    introductionEnabled:
+      typeof userProfile.introductionEnabled === "boolean"
+        ? userProfile.introductionEnabled
+        : options.introductionEnabledFallback ?? true,
   }
 }
 
@@ -119,6 +124,7 @@ export function mergeUserProfileDisplaySettings(
     ...siteSettingsState,
     userProfile: {
       ipLocationEnabled: Boolean(input.ipLocationEnabled),
+      introductionEnabled: input.introductionEnabled !== false,
     },
   })
 }

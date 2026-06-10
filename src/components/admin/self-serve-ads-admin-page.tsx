@@ -305,6 +305,9 @@ export function SelfServeAdsAdminPage({ AppId, config }: SelfServeAdsAdminPagePr
                     </div>
                     <p className="mt-2 text-sm font-medium text-foreground">{order.slotType === "IMAGE" ? order.imageUrl ?? "未填写图片地址" : order.title ?? "未填写标题"}</p>
                     <p className="mt-1 text-xs text-muted-foreground">{order.linkUrl ?? "-"} · {order.durationMonths ?? 0} 个月 · {order.pricePoints ?? 0} 积分</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {order.startsAt ? `开始 ${order.startsAt}` : "尚未开始"} · {order.endsAt ? `到期 ${order.endsAt}` : "暂无到期时间"}
+                    </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" variant="outline" className="h-8 rounded-full px-3 text-xs" onClick={() => setEditingId(expanded ? null : order.id)}>{expanded ? "收起" : "编辑"}</Button>

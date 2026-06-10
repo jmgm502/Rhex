@@ -15,7 +15,7 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
 
-export const POST = createRouteHandler(async ({ request }) => {
+export const POST = createRouteHandler<unknown>(async ({ request }) => {
   const body = await readJsonBody(request)
   const channel = (readOptionalStringField(body, "channel") || "EMAIL").toUpperCase()
 
@@ -48,6 +48,7 @@ export const POST = createRouteHandler(async ({ request }) => {
 
       const result = await sendPasswordResetPhoneCode({
         phone,
+        request,
         ip: getRequestIp(request),
         userAgent: request.headers.get("user-agent"),
       })

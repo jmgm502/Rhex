@@ -5,11 +5,14 @@ import { AddonSlotRenderer, AddonSurfaceRenderer } from "@/addons-host"
 import { ForumPageShell } from "@/components/forum/forum-page-shell"
 import { HelpDocumentPageContent } from "@/components/help-document-page-content"
 import { HomeSidebarPanels } from "@/components/home/home-sidebar-panels"
+import { PostTableOfContents } from "@/components/post/post-table-of-contents"
 import { SiteHeader } from "@/components/site-header"
 import { getHomeAnnouncements } from "@/lib/announcements"
 import { getCurrentUser } from "@/lib/auth"
 import { getBoards } from "@/lib/boards"
 import { getHomeSidebarHotTopics, resolveSidebarUser } from "@/lib/home-sidebar"
+import { renderMarkdown } from "@/lib/markdown/render"
+import { normalizeRenderedMarkdownHtmlHeadings } from "@/lib/markdown/toc"
 import { getHelpDocumentPageData } from "@/lib/site-documents"
 import { getSiteSettings } from "@/lib/site-settings"
 import { getZones } from "@/lib/zones"
@@ -57,6 +60,11 @@ export default async function HelpPage({ params }: HelpPageProps) {
   }
 
   const sidebarUser = await resolveSidebarUser(currentUser, settings)
+  const renderedActiveItemHtml = helpData.activeItem?.content.trim()
+    ? renderMarkdown(helpData.activeItem.content, settings.markdownEmojiMap)
+    : ""
+  const normalizedActiveItemMarkdown = normalizeRenderedMarkdownHtmlHeadings(renderedActiveItemHtml, new Map())
+  const helpTableOfContents = normalizedActiveItemMarkdown.headings
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -73,7 +81,11 @@ export default async function HelpPage({ params }: HelpPageProps) {
                   <>
                     <AddonSlotRenderer slot="help.document.before" />
                     <AddonSurfaceRenderer surface="help.document" props={{ helpData }}>
-                      <HelpDocumentPageContent items={helpData.items} activeItem={helpData.activeItem} />
+                      <HelpDocumentPageContent
+                        items={helpData.items}
+                        activeItem={helpData.activeItem}
+                        activeItemHtml={normalizedActiveItemMarkdown.html}
+                      />
                     </AddonSurfaceRenderer>
                     <AddonSlotRenderer slot="help.document.after" />
                   </>
@@ -83,22 +95,30 @@ export default async function HelpPage({ params }: HelpPageProps) {
             </main>
           )}
           rightSidebar={(
-            <div className="mt-6 hidden pb-12 lg:block">
+            <aside className="mt-6 hidden pb-12 lg:block lg:h-full">
               <AddonSlotRenderer slot="help.sidebar.before" />
               <AddonSurfaceRenderer surface="help.sidebar" props={{ announcements, hotTopics, settings }}>
-                <HomeSidebarPanels
-                  user={sidebarUser}
-                  hotTopics={hotTopics}
-                  announcements={announcements}
-                  showAnnouncements={settings.homeSidebarAnnouncementsEnabled}
-                  siteName={settings.siteName}
-                  siteDescription={settings.siteDescription}
-                  siteLogoPath={settings.siteLogoPath}
-                  siteIconPath={settings.siteIconPath}
-                />
+                <div className="mobile-sidebar-stack flex min-w-0 w-full max-w-full flex-col gap-4 lg:h-full">
+                  {helpTableOfContents.length > 0 ? (
+                    <div className="min-h-0 w-full lg:sticky lg:top-20">
+                      <PostTableOfContents items={helpTableOfContents} title="帮助目录" ariaLabel="帮助文档目录" />
+                    </div>
+                  ) : null}
+                  <HomeSidebarPanels
+                    user={sidebarUser}
+                    hotTopics={hotTopics}
+                    announcements={announcements}
+                    showAnnouncements={settings.homeSidebarAnnouncementsEnabled}
+                    siteName={settings.siteName}
+                    siteDescription={settings.siteDescription}
+                    siteLogoPath={settings.siteLogoPath}
+                    siteIconPath={settings.siteIconPath}
+                    sticky={false}
+                  />
+                </div>
               </AddonSurfaceRenderer>
               <AddonSlotRenderer slot="help.sidebar.after" />
-            </div>
+            </aside>
           )}
         />
       </div>

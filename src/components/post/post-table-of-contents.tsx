@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils"
 
 interface PostTableOfContentsProps {
   items: MarkdownHeadingItem[]
+  title?: string
+  ariaLabel?: string
 }
 
 const HEADING_SCROLL_OFFSET = 112
@@ -29,7 +31,7 @@ function resolveHashHeadingId(items: MarkdownHeadingItem[]) {
   return items.some((item) => item.id === decodedHash) ? decodedHash : null
 }
 
-export function PostTableOfContents({ items }: PostTableOfContentsProps) {
+export function PostTableOfContents({ items, title = "目录", ariaLabel = "帖子目录" }: PostTableOfContentsProps) {
   const [activeId, setActiveId] = useState(items[0]?.id ?? "")
   const navRef = useRef<HTMLElement | null>(null)
   const itemRefs = useRef(new Map<string, HTMLAnchorElement>())
@@ -150,14 +152,14 @@ export function PostTableOfContents({ items }: PostTableOfContentsProps) {
       <div className="flex shrink-0 items-center gap-2 border-b border-border/70 px-4 py-3">
         <ListTree className="h-4 w-4 text-muted-foreground" />
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-foreground">目录</div>
+          <div className="text-sm font-semibold text-foreground">{title}</div>
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">
         <nav
           ref={navRef}
-          aria-label="帖子目录"
+          aria-label={ariaLabel}
           className="max-h-[min(60dvh,28rem)] min-h-0 overflow-y-auto overscroll-contain px-2 py-2 [scrollbar-gutter:stable] lg:max-h-[calc(100dvh-9rem)]"
         >
           <div className="flex flex-col gap-1">

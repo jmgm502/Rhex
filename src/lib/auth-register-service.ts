@@ -15,6 +15,7 @@ import {
 } from "@/db/external-auth-user-queries"
 import { readAddonAuthFieldsFromBody } from "@/lib/addon-auth-fields"
 import { validateRegisterWithAddonProviders } from "@/lib/addon-auth-providers"
+import { verifySmsVerificationCodeWithAddonProviders } from "@/lib/addon-sms-verification"
 import { apiError } from "@/lib/api-route"
 import { verifyRegisterCaptchaWithAddonProviders } from "@/lib/addon-captcha-providers"
 import { verifyBuiltinCaptchaToken } from "@/lib/builtin-captcha"
@@ -244,10 +245,13 @@ async function verifyRegisterContactCodes(context: RegisterContext) {
   }
 
   if (settings.registerPhoneEnabled && settings.registerPhoneVerification && payload.phone && payload.phoneCode) {
-    await verifyCode({
-      channel: VerificationChannel.PHONE,
-      target: payload.phone,
+    await verifySmsVerificationCodeWithAddonProviders({
+      request: context.request,
+      phone: payload.phone,
       code: payload.phoneCode,
+      purpose: "register",
+      requestIp: context.registerIp,
+      userAgent: context.userAgent,
     })
   }
 }

@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/rbutton"
 import { Tooltip } from "@/components/ui/tooltip"
 import { UserAvatar } from "@/components/user/user-avatar"
-import { formatCompactNumber, formatNumber } from "@/lib/formatters"
+import { formatCompactNumber, formatCompactPointValue } from "@/lib/formatters"
 import { getPostRedPacketGrantModeLabel } from "@/lib/post-reward-pool-labels"
 import type { PostRedPacketSummary } from "@/lib/post-red-packets"
 
@@ -29,7 +29,7 @@ interface PostRedPacketPanelProps {
 export function PostRedPacketPanel({ postId, pointName, summary }: PostRedPacketPanelProps) {
   const [open, setOpen] = useState(false)
   const hoverSummary = summary.rewardMode === "JACKPOT"
-    ? `余 ${formatNumber(summary.remainingPoints)} ${pointName}`
+    ? `余 ${formatCompactPointValue(summary.remainingPoints)} ${pointName}`
     : `余 ${formatCompactNumber(summary.remainingCount)} 个`
   const latestRecords = useMemo(() => summary.records.slice(-10).reverse(), [summary.records])
 
@@ -78,16 +78,16 @@ export function PostRedPacketPanel({ postId, pointName, summary }: PostRedPacket
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-xl bg-secondary/40 px-4 py-3">
             <p className="text-xs text-muted-foreground">{summary.rewardMode === "JACKPOT" ? "初始积分" : "红包总额"}</p>
-            <p className="mt-1 font-semibold">{formatNumber(summary.totalPoints)} {pointName}</p>
+            <p className="mt-1 font-semibold">{formatCompactPointValue(summary.totalPoints)} {pointName}</p>
           </div>
           <div className="rounded-xl bg-secondary/40 px-4 py-3">
             <p className="text-xs text-muted-foreground">{summary.rewardMode === "JACKPOT" ? "当前积分池" : "剩余数量"}</p>
-            <p className="mt-1 font-semibold">{summary.rewardMode === "JACKPOT" ? `${formatNumber(summary.remainingPoints)} ${pointName}` : `${formatCompactNumber(summary.remainingCount)} / ${formatNumber(summary.remainingPoints)} ${pointName}`}</p>
+            <p className="mt-1 font-semibold">{summary.rewardMode === "JACKPOT" ? `${formatCompactPointValue(summary.remainingPoints)} ${pointName}` : `${formatCompactNumber(summary.remainingCount)} / ${formatCompactPointValue(summary.remainingPoints)} ${pointName}`}</p>
           </div>
           {summary.rewardMode === "JACKPOT" ? (
             <div className="col-span-2 rounded-xl bg-secondary/40 px-4 py-3">
               <p className="text-xs text-muted-foreground">递增规则</p>
-              <p className="mt-1 font-semibold">首回 +{formatNumber(summary.jackpotReplyIncrementPoints ?? 0)}，复回随机小额追加</p>
+              <p className="mt-1 font-semibold">首回 +{formatCompactPointValue(summary.jackpotReplyIncrementPoints ?? 0)}，复回随机小额追加</p>
             </div>
           ) : (
             <div className="col-span-2 rounded-xl bg-secondary/40 px-4 py-3">
@@ -109,7 +109,7 @@ export function PostRedPacketPanel({ postId, pointName, summary }: PostRedPacket
                   <div className="relative">
                     <UserAvatar name={record.nickname ?? record.username} avatarPath={record.avatarPath} size="sm" />
                     <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-semibold leading-4 text-white shadow-xs">
-                      +{formatNumber(record.amount)}
+                      +{formatCompactPointValue(record.amount)}
                     </span>
                   </div>
                 </Tooltip>

@@ -11,6 +11,7 @@ import {
   AdminFilterSearchField,
   AdminFilterSelectField,
 } from "@/components/admin/admin-filter-card"
+import { AdminPaginationBar } from "@/components/admin/admin-pagination-bar"
 import { AdminSummaryStrip } from "@/components/admin/admin-summary-strip"
 import { AdminUserModal } from "@/components/admin/admin-user-modal"
 import { UserAvatar } from "@/components/user/user-avatar"
@@ -56,7 +57,6 @@ interface AdminUserListProps {
   data: AdminUserListResult
 }
 
-type PaginationToken = number | "ellipsis"
 type AdminUserBulkAction = "setRole" | "activate" | "mute" | "ban" | "delete"
 
 interface AdminUserBulkActionResult {
@@ -111,40 +111,6 @@ const bulkActionOptions: Array<{ value: AdminUserBulkAction; label: string; dang
   { value: "delete", label: "批量删除", danger: true },
 ]
 const bulkRoleOptions = roleOptions.filter((item) => item.value !== "ALL")
-
-function buildPageTokens(page: number, totalPages: number): PaginationToken[] {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1)
-  }
-
-  const windowSize = 5
-  const start = Math.min(
-    Math.max(page - Math.floor(windowSize / 2), 1),
-    Math.max(totalPages - windowSize + 1, 1),
-  )
-  const end = Math.min(start + windowSize - 1, totalPages)
-  const tokens: PaginationToken[] = []
-
-  if (start > 1) {
-    tokens.push(1)
-    if (start > 2) {
-      tokens.push("ellipsis")
-    }
-  }
-
-  for (let current = start; current <= end; current += 1) {
-    tokens.push(current)
-  }
-
-  if (end < totalPages) {
-    if (end < totalPages - 1) {
-      tokens.push("ellipsis")
-    }
-    tokens.push(totalPages)
-  }
-
-  return tokens
-}
 
 export function AdminUserList({ data }: AdminUserListProps) {
   const [filters, setFilters] = useState({
@@ -260,6 +226,17 @@ export function AdminUserList({ data }: AdminUserListProps) {
     query.set("userPage", String(page))
     return `/admin?${query.toString()}`
   }
+
+  const paginationJumpFields = [
+    { name: "tab", value: "users" },
+    { name: "userKeyword", value: data.filters.keyword },
+    { name: "userRole", value: data.filters.role },
+    { name: "userStatus", value: data.filters.status },
+    { name: "userVip", value: data.filters.vip },
+    { name: "userActivity", value: data.filters.activity },
+    { name: "userSort", value: data.filters.sort },
+    { name: "userPageSize", value: String(data.pagination.pageSize) },
+  ]
 
   function toggleSelectUser(userId: number, checked: boolean) {
     setSelectedUserIds((current) => {
@@ -540,6 +517,20 @@ export function AdminUserList({ data }: AdminUserListProps) {
             </div>
           </div>
         ) : null}
+        {data.users.length > 0 ? (
+          <AdminPaginationBar
+            pagination={data.pagination}
+            buildPageHref={buildPageHref}
+            itemLabel="条用户"
+            className="border-b border-border px-4 py-3"
+            jump={{
+              action: "/admin",
+              pageParamName: "userPage",
+              hiddenFields: paginationJumpFields,
+              ariaLabel: "跳转到用户列表页码",
+            }}
+          />
+        ) : null}
         <CardContent className="px-0 py-0">
           {data.users.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
@@ -620,87 +611,21 @@ export function AdminUserList({ data }: AdminUserListProps) {
             </Table>
           )}
         </CardContent>
-        <CardFooter className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span>第 {data.pagination.page} / {data.pagination.totalPages} 页</span>
-            <span>每页 {data.pagination.pageSize} 条</span>
-            <span>共 {formatNumber(data.pagination.total)} 条用户</span>
-          </div>
-          <AdminUserPagination data={data} buildPageHref={buildPageHref} />
+        <CardFooter>
+          <AdminPaginationBar
+            pagination={data.pagination}
+            buildPageHref={buildPageHref}
+            itemLabel="条用户"
+            className="w-full"
+            jump={{
+              action: "/admin",
+              pageParamName: "userPage",
+              hiddenFields: paginationJumpFields,
+              ariaLabel: "跳转到用户列表页码",
+            }}
+          />
         </CardFooter>
       </Card>
-    </div>
-  )
-}
-
-function AdminUserPagination({
-  data,
-  buildPageHref,
-}: {
-  data: AdminUserListResult
-  buildPageHref: (page: number) => string
-}) {
-  const pageTokens = buildPageTokens(data.pagination.page, data.pagination.totalPages)
-
-  return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
-      <div className="flex flex-wrap items-center justify-end gap-1.5">
-        <PaginationLink
-          href={data.pagination.hasPrevPage ? buildPageHref(data.pagination.page - 1) : "#"}
-          disabled={!data.pagination.hasPrevPage}
-        >
-          上一页
-        </PaginationLink>
-        {pageTokens.map((token, index) => token === "ellipsis" ? (
-          <span key={`ellipsis-${index}`} className="px-1 text-xs text-muted-foreground">
-            ...
-          </span>
-        ) : (
-          <PaginationLink
-            key={token}
-            href={buildPageHref(token)}
-            disabled={token === data.pagination.page}
-            active={token === data.pagination.page}
-          >
-            {token}
-          </PaginationLink>
-        ))}
-        <PaginationLink
-          href={data.pagination.hasNextPage ? buildPageHref(data.pagination.page + 1) : "#"}
-          disabled={!data.pagination.hasNextPage}
-        >
-          下一页
-        </PaginationLink>
-      </div>
-
-      {data.pagination.totalPages > 1 ? (
-        <form action="/admin" className="flex items-center gap-1.5">
-          <input type="hidden" name="tab" value="users" />
-          <input type="hidden" name="userKeyword" value={data.filters.keyword} />
-          <input type="hidden" name="userRole" value={data.filters.role} />
-          <input type="hidden" name="userStatus" value={data.filters.status} />
-          <input type="hidden" name="userVip" value={data.filters.vip} />
-          <input type="hidden" name="userActivity" value={data.filters.activity} />
-          <input type="hidden" name="userSort" value={data.filters.sort} />
-          <input type="hidden" name="userPageSize" value={String(data.pagination.pageSize)} />
-          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            跳至
-            <Input
-              type="number"
-              name="userPage"
-              min={1}
-              max={data.pagination.totalPages}
-              step={1}
-              defaultValue={data.pagination.page}
-              aria-label="跳转到用户列表页码"
-              className="h-8 w-16 rounded-full bg-background px-2 text-center text-xs"
-            />
-          </label>
-          <Button type="submit" variant="outline" className="rounded-full px-3 text-xs">
-            跳页
-          </Button>
-        </form>
-      ) : null}
     </div>
   )
 }
@@ -824,34 +749,6 @@ function UserGrowthMetricsCell({ user }: { user: AdminUserListItem }) {
       <p>邀请 {formatNumber(user.inviteCount)}</p>
       <p>签到 {formatNumber(user.checkInDays)}</p>
     </div>
-  )
-}
-
-function PaginationLink({
-  href,
-  disabled,
-  active = false,
-  children,
-}: {
-  href: string
-  disabled: boolean
-  active?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <Link
-      href={href}
-      aria-disabled={disabled}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        buttonVariants({ variant: active ? "default" : "outline", size: "default" }),
-        "min-w-8 rounded-full px-3 text-xs",
-        disabled ? "pointer-events-none" : "",
-        disabled && !active ? "opacity-40" : ""
-      )}
-    >
-      {children}
-    </Link>
   )
 }
 

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { Textarea } from "@/components/ui/textarea"
+import { formatCompactPointValue } from "@/lib/formatters"
 import { formatPostEditWindowLabel, isPermanentPostEditWindow, isPostStillEditable } from "@/lib/post-edit-window"
 
 interface PostEditPanelProps {
@@ -152,7 +153,7 @@ export function PostEditPanel({
               已追加 {appendixCount} 条附言{!canEditOriginal ? `，每次追加需间隔 ${APPEND_INTERVAL_MINUTES} 分钟` : ""}。
             </p>
             <p className="text-xs text-muted-foreground">
-              下线帖子费用：{offlinePrice === 0 ? "免费" : `${offlinePrice} ${pointName}`}（当前身份：{offlinePriceLabel}）。
+              下线帖子费用：{offlinePrice === 0 ? "免费" : `${formatCompactPointValue(offlinePrice)} ${pointName}`}（当前身份：{offlinePriceLabel}）。
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -215,7 +216,7 @@ export function PostEditPanel({
         onClose={() => setOfflineModalOpen(false)}
         size="md"
         title="下线帖子"
-        description={`帖子下线后将不再对普通用户展示，当前身份费用为 ${offlinePrice === 0 ? "免费" : `${offlinePrice} ${pointName}`}。`}
+        description={`帖子下线后将不再对普通用户展示，当前身份费用为 ${offlinePrice === 0 ? "免费" : `${formatCompactPointValue(offlinePrice)} ${pointName}`}。`}
         footer={(
           <div className="flex items-center justify-end gap-3">
             <Button type="button" variant="ghost" onClick={() => setOfflineModalOpen(false)} disabled={offlineLoading}>取消</Button>
@@ -227,7 +228,7 @@ export function PostEditPanel({
       >
         <div className="space-y-4">
           <div className="rounded-[18px] border border-border bg-card/60 px-4 py-3 text-sm text-muted-foreground">
-            结算身份：{offlinePriceLabel}。{offlinePrice > 0 ? `提交后将扣除 ${offlinePrice} ${pointName}。` : "当前配置为免费下线。"}
+            结算身份：{offlinePriceLabel}。{offlinePrice > 0 ? `提交后将扣除 ${formatCompactPointValue(offlinePrice)} ${pointName}。` : "当前配置为免费下线。"}
           </div>
           <div className="space-y-2">
             <p className="text-sm font-medium">下线说明（可选）</p>

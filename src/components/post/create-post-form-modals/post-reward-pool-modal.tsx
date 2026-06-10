@@ -3,6 +3,7 @@
 import { PointsBudgetSliderField } from "@/components/post/points-budget-slider-field"
 import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/rbutton"
+import { formatCompactPointValue } from "@/lib/formatters"
 import { parsePositiveSafeInteger } from "@/lib/shared/safe-integer"
 
 export function PostRewardPoolModal({
@@ -144,7 +145,7 @@ export function PostRewardPoolModal({
                   onChange={onChange.onJackpotInitialPointsChange}
                 />
                 <div className="rounded-[10px] bg-amber-100 px-3 py-2 text-[11px] leading-5 text-amber-900">
-                  <p>{pointName}池递增规则：初始{pointName} + 用户每次回复增加的{pointName}（+{jackpotReplyIncrementPoints}，目前由系统发放）。</p>
+                  <p>{pointName}池递增规则：初始{pointName} + 用户每次回复增加的{pointName}（+{formatCompactPointValue(jackpotReplyIncrementPoints)}，目前由系统发放）。</p>
                   <p className="mt-1">用户中奖后，会从{pointName}池中扣除相应{pointName}后继续计算，直到{pointName}消耗完或结束。</p>
                 </div>
               </div>
@@ -206,7 +207,7 @@ export function PostRewardPoolModal({
                   </div>
                   <div className="rounded-[10px] bg-secondary/60 px-2.5 py-2">
                     <p className="text-[10px] text-muted-foreground">总消耗</p>
-                    <p className="mt-0.5 text-[11px] font-semibold">{value.grantMode === "FIXED" ? (value.fixedTotalPoints ?? 0) : randomRedPacketCost} {pointName}</p>
+                    <p className="mt-0.5 text-[11px] font-semibold">{formatCompactPointValue(value.grantMode === "FIXED" ? (value.fixedTotalPoints ?? 0) : randomRedPacketCost)} {pointName}</p>
                   </div>
                 </div>
               </div>

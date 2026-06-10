@@ -1,5 +1,5 @@
 import type { BadgeEligibilitySnapshot } from "@/lib/badges"
-import { formatCompactNumber } from "@/lib/formatters"
+import { formatCompactNumber, formatCompactPointValue } from "@/lib/formatters"
 import type { SiteUserProfile } from "@/lib/users"
 
 export interface UserProfileRadarDimension {
@@ -83,7 +83,7 @@ export function buildUserProfileRadarData(params: {
         { normalized: normalizeLinear(vipLevel, 3), weight: 0.2 },
       ]),
       displayScore: 0,
-      detail: `积分 ${formatShortCount(points)} · VIP ${vipLevel}`,
+      detail: `积分 ${formatCompactPointValue(points)} · VIP ${vipLevel}`,
     },
     {
       key: "experience",

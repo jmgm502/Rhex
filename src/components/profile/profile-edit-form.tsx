@@ -61,6 +61,7 @@ interface ProfileEditFormProps {
   avatarMaxFileSizeMb: number
   markdownEmojiMap?: MarkdownEmojiItem[]
   markdownImageUploadEnabled?: boolean
+  profileIntroductionEnabled?: boolean
   initialSection?: ProfileSectionKey
   availableSections?: ProfileSectionKey[]
 }
@@ -151,6 +152,7 @@ export function ProfileEditForm({
   avatarMaxFileSizeMb,
   markdownEmojiMap,
   markdownImageUploadEnabled,
+  profileIntroductionEnabled = true,
   initialSection = "basic",
   availableSections = ["basic", "avatar", "email", "password", "privacy"],
 }: ProfileEditFormProps) {
@@ -355,7 +357,7 @@ export function ProfileEditForm({
       body: JSON.stringify({
         nickname: payload.nickname ?? nickname,
         bio: payload.bio ?? bio,
-        introduction: payload.introduction ?? introduction,
+        ...(profileIntroductionEnabled ? { introduction: payload.introduction ?? introduction } : {}),
         gender: payload.gender ?? gender,
         avatarPath: payload.avatarPath ?? savedAvatarPath,
         email: payload.email ?? email,
@@ -363,7 +365,7 @@ export function ProfileEditForm({
         phone: payload.phone ?? phone,
         phoneCode: payload.phoneCode ?? "",
         activityVisibility: payload.activityVisibility ?? activityVisibility,
-        introductionVisibility: payload.introductionVisibility ?? introductionVisibility,
+        ...(profileIntroductionEnabled ? { introductionVisibility: payload.introductionVisibility ?? introductionVisibility } : {}),
       }),
     })
 
@@ -379,6 +381,10 @@ export function ProfileEditForm({
   }
 
   async function handleVisibilityChange(field: "activity" | "introduction", nextVisibility: UserProfileVisibility) {
+    if (field === "introduction" && !profileIntroductionEnabled) {
+      return
+    }
+
     setPrivacySavingKey(field)
 
     try {
@@ -436,6 +442,10 @@ export function ProfileEditForm({
 
   async function handleIntroductionSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!profileIntroductionEnabled) {
+      return
+    }
+
     setIntroductionLoading(true)
 
     try {
@@ -664,21 +674,23 @@ export function ProfileEditForm({
               <p className="text-xs text-muted-foreground">{bio.length}/200</p>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">个人介绍</p>
-                  <p className="mt-2 text-xs text-muted-foreground">{introductionHint}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {introduction.trim() ? `当前已填写 ${introduction.length} 个字符。` : "当前还没有填写个人介绍。"}
-                  </p>
+            {profileIntroductionEnabled ? (
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">个人介绍</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{introductionHint}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {introduction.trim() ? `当前已填写 ${introduction.length} 个字符。` : "当前还没有填写个人介绍。"}
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" onClick={() => setShowIntroductionModal(true)}>
+                    <PencilLine className="mr-2 h-4 w-4" />
+                    修改介绍
+                  </Button>
                 </div>
-                <Button type="button" variant="outline" onClick={() => setShowIntroductionModal(true)}>
-                  <PencilLine className="mr-2 h-4 w-4" />
-                  修改介绍
-                </Button>
               </div>
-            </div>
+            ) : null}
           </div>
 
           <Button disabled={profileLoading}>{profileLoading ? "保存中..." : "保存基础资料"}</Button>
@@ -849,7 +861,9 @@ export function ProfileEditForm({
         <div className="space-y-5 rounded-xl bg-card p-5">
           <div>
             <p className="text-sm font-medium">主页隐私</p>
-            <p className="mt-1 text-xs text-muted-foreground">分别控制“活动轨迹”和“介绍”在主页上的可见范围，登录公开表示只有登录后才能查看。</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {profileIntroductionEnabled ? "分别控制“活动轨迹”和“介绍”在主页上的可见范围，登录公开表示只有登录后才能查看。" : "控制“活动轨迹”在主页上的可见范围，登录公开表示只有登录后才能查看。"}
+            </p>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
@@ -861,14 +875,16 @@ export function ProfileEditForm({
               currentDescription={getActivityVisibilityDescription(activityVisibility)}
               onChange={(nextVisibility) => handleVisibilityChange("activity", nextVisibility)}
             />
-            <PrivacyVisibilityCard
-              title="介绍"
-              description="控制主页里“介绍”标签的详细内容。"
-              value={introductionVisibility}
-              saving={privacySavingKey === "introduction"}
-              currentDescription={getIntroductionVisibilityDescription(introductionVisibility)}
-              onChange={(nextVisibility) => handleVisibilityChange("introduction", nextVisibility)}
-            />
+            {profileIntroductionEnabled ? (
+              <PrivacyVisibilityCard
+                title="介绍"
+                description="控制主页里“介绍”标签的详细内容。"
+                value={introductionVisibility}
+                saving={privacySavingKey === "introduction"}
+                currentDescription={getIntroductionVisibilityDescription(introductionVisibility)}
+                onChange={(nextVisibility) => handleVisibilityChange("introduction", nextVisibility)}
+              />
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -905,50 +921,52 @@ export function ProfileEditForm({
         </form>
       </Modal>
 
-      <Modal
-        open={showIntroductionModal}
-        title="修改个人介绍"
-        hideHeaderCloseButtonOnMobile
-        description="个人介绍支持 Markdown，提交后会按当前身份即时结算。"
-        onClose={() => {
-          setPendingIntroduction(introduction)
-          setShowIntroductionModal(false)
-        }}
-        footer={
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => {
-              setPendingIntroduction(introduction)
-              setShowIntroductionModal(false)
-            }}>
-              取消
-            </Button>
-            <Button type="submit" form="introduction-edit-form" disabled={introductionLoading}>
-              {introductionLoading ? "保存中..." : "确认修改"}
-            </Button>
-          </div>
-        }
-      >
-        <form id="introduction-edit-form" onSubmit={handleIntroductionSubmit} className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium">个人介绍</p>
-            <span className="text-xs text-muted-foreground">{pendingIntroduction.length}/20000</span>
-          </div>
-          {showIntroductionModal ? (
-            <ProfileIntroductionEditor
-              context="profile"
-              value={pendingIntroduction}
-              onChange={setPendingIntroduction}
-              minHeight={320}
-              uploadFolder="profiles"
-              markdownEmojiMap={markdownEmojiMap}
-              markdownImageUploadEnabled={markdownImageUploadEnabled}
-              renderFullscreenInDialogPortal
-              placeholder="写一段更完整的自我介绍、经历、兴趣或作品清单。支持 Markdown 语法。"
-            />
-          ) : null}
-          <p className="text-xs text-muted-foreground">{introductionHint}</p>
-        </form>
-      </Modal>
+      {profileIntroductionEnabled ? (
+        <Modal
+          open={showIntroductionModal}
+          title="修改个人介绍"
+          hideHeaderCloseButtonOnMobile
+          description="个人介绍支持 Markdown，提交后会按当前身份即时结算。"
+          onClose={() => {
+            setPendingIntroduction(introduction)
+            setShowIntroductionModal(false)
+          }}
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={() => {
+                setPendingIntroduction(introduction)
+                setShowIntroductionModal(false)
+              }}>
+                取消
+              </Button>
+              <Button type="submit" form="introduction-edit-form" disabled={introductionLoading}>
+                {introductionLoading ? "保存中..." : "确认修改"}
+              </Button>
+            </div>
+          }
+        >
+          <form id="introduction-edit-form" onSubmit={handleIntroductionSubmit} className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-medium">个人介绍</p>
+              <span className="text-xs text-muted-foreground">{pendingIntroduction.length}/20000</span>
+            </div>
+            {showIntroductionModal ? (
+              <ProfileIntroductionEditor
+                context="profile"
+                value={pendingIntroduction}
+                onChange={setPendingIntroduction}
+                minHeight={320}
+                uploadFolder="profiles"
+                markdownEmojiMap={markdownEmojiMap}
+                markdownImageUploadEnabled={markdownImageUploadEnabled}
+                renderFullscreenInDialogPortal
+                placeholder="写一段更完整的自我介绍、经历、兴趣或作品清单。支持 Markdown 语法。"
+              />
+            ) : null}
+            <p className="text-xs text-muted-foreground">{introductionHint}</p>
+          </form>
+        </Modal>
+      ) : null}
     </div>
   )
 }

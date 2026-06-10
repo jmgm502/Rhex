@@ -3,7 +3,7 @@
 import { LotteryConditionValueField } from "@/components/post/lottery-condition-value-field"
 import { Button } from "@/components/ui/rbutton"
 import type { AccessThresholdOption } from "@/lib/access-threshold-options"
-import { formatCompactNumber, formatNumber } from "@/lib/formatters"
+import { formatCompactNumber, formatCompactPointValue } from "@/lib/formatters"
 import {
   LOTTERY_PRIZE_TYPE_OPTIONS,
   LOTTERY_VIP_PLAN_OPTIONS,
@@ -213,7 +213,7 @@ export function LotterySettingsSection({
         </div>
         {autoPrizeCost > 0 ? (
           <div className="rounded-[18px] border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-            自动奖品预计预扣 <span className="font-medium text-foreground">{formatNumber(autoPrizeCost)} {pointName}</span>。开奖时未实际发出的自动奖品份额会退回发起人账户。
+            自动奖品预计预扣 <span className="font-medium text-foreground">{formatCompactPointValue(autoPrizeCost)} {pointName}</span>。开奖时未实际发出的自动奖品份额会退回发起人账户。
           </div>
         ) : null}
         <div className="space-y-3">
@@ -243,7 +243,7 @@ export function LotterySettingsSection({
                 {prizeType === "POINTS" ? (
                   <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                     <input value={prize.pointsAmount} onChange={(event) => onLotteryPrizeChange(index, "pointsAmount", event.target.value)} className="h-11 rounded-full border border-border bg-background px-4 text-sm outline-hidden" placeholder={`每名中奖者获得的${pointName}，如 100`} disabled={disabled} />
-                    <span className="text-xs text-muted-foreground">本奖项预扣 {formatNumber(prizeCost)} {pointName}</span>
+                    <span className="text-xs text-muted-foreground">本奖项预扣 {formatCompactPointValue(prizeCost)} {pointName}</span>
                   </div>
                 ) : null}
 
@@ -258,12 +258,12 @@ export function LotterySettingsSection({
                         })
                         return (
                           <option key={option.value} value={option.value}>
-                            {option.label} · {formatNumber(detail.pointsCost)} {pointName}
+                            {option.label} · {formatCompactPointValue(detail.pointsCost)} {pointName}
                           </option>
                         )
                       })}
                     </select>
-                    <span className="text-xs text-muted-foreground">本奖项预扣 {formatNumber(prizeCost)} {pointName}</span>
+                    <span className="text-xs text-muted-foreground">本奖项预扣 {formatCompactPointValue(prizeCost)} {pointName}</span>
                   </div>
                 ) : null}
 

@@ -19,7 +19,7 @@ export const TOOLBAR_TIPS = {
   strike: { label: "删除线", shortcuts: { windows: ["Alt+Shift+5"], mac: ["Cmd+Shift+5"], default: ["Alt+Shift+5"] } },
   highlight: {
     label: "高亮",
-    shortcuts: { windows: ["Ctrl+X"], mac: ["Cmd+X"], default: ["Ctrl+X"] },
+    shortcuts: { windows: ["Ctrl+Shift+H"], mac: ["Cmd+Shift+H"], default: ["Ctrl+Shift+H"] },
     description: "插入 ==高亮内容== 标记。",
   },
   code: {

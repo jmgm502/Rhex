@@ -33,7 +33,11 @@ const profileSectionCopy: Record<ProfileTabKey, { title: string; description: st
 
 export function ProfileSettingsSection({ data }: { data: SettingsPageData }) {
   const { route, profile, dbUser, settings, accountBindings } = data
+  const profileIntroductionEnabled = settings.userProfileIntroductionEnabled && data.profileIntroductionEditPermission.allowed
   const panelMeta = profileSectionCopy[route.currentProfileTab]
+  const panelDescription = route.currentProfileTab === "privacy" && !profileIntroductionEnabled
+    ? "在这里控制个人主页活动轨迹的公开范围。"
+    : panelMeta.description
   const basicSections = data.smsDeliveryEnabled
     ? ["basic", "avatar", "email", "phone", "password"] as const
     : ["basic", "avatar", "email", "password"] as const
@@ -43,7 +47,7 @@ export function ProfileSettingsSection({ data }: { data: SettingsPageData }) {
       <CardHeader className="space-y-4">
         <div className="space-y-1">
           <CardTitle>{panelMeta.title}</CardTitle>
-          <p className="text-sm text-muted-foreground">{panelMeta.description}</p>
+          <p className="text-sm text-muted-foreground">{panelDescription}</p>
         </div>
         <SettingsTabs tabs={profileTabs} queryKey="profileTab" basePath="/settings?tab=profile" />
       </CardHeader>
@@ -76,6 +80,7 @@ export function ProfileSettingsSection({ data }: { data: SettingsPageData }) {
             avatarMaxFileSizeMb={settings.uploadAvatarMaxFileSizeMb}
             markdownEmojiMap={settings.markdownEmojiMap}
             markdownImageUploadEnabled={settings.markdownImageUploadEnabled}
+            profileIntroductionEnabled={profileIntroductionEnabled}
             initialSection={route.currentProfileTab === "privacy" ? "privacy" : "basic"}
             availableSections={route.currentProfileTab === "privacy" ? ["privacy"] : [...basicSections]}
           />

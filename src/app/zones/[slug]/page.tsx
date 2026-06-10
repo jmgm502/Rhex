@@ -115,7 +115,7 @@ export default async function ZonePage(props: PageProps<"/zones/[slug]">) {
     requirePostReview: zone.requirePostReview ?? false,
     requireCommentReview: zone.requireCommentReview ?? false,
     showInHomeFeed: true,
-  }, "view")
+  }, "view", settings.pointName)
 
   const rawPage = readSearchParam(searchParams?.page)
   const rawSort = readSearchParam(searchParams?.sort)

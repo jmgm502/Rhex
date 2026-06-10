@@ -1,5 +1,6 @@
 import { apiError, apiSuccess, createRouteHandler, readJsonBody, requireStringField } from "@/lib/api-route"
-import { isVerificationChannel } from "@/lib/shared/verification-channel"
+import { verifySmsVerificationCodeWithAddonProviders } from "@/lib/addon-sms-verification"
+import { isVerificationChannel, VerificationChannel } from "@/lib/shared/verification-channel"
 import { verifyCode } from "@/lib/verification"
 
 export const POST = createRouteHandler(async ({ request }) => {
@@ -13,7 +14,17 @@ export const POST = createRouteHandler(async ({ request }) => {
     apiError(400, "缺少校验参数")
   }
 
-  await verifyCode({ channel, target, code })
+  if (channel === VerificationChannel.PHONE) {
+    await verifySmsVerificationCodeWithAddonProviders({
+      request,
+      phone: target,
+      code,
+      purpose: "register",
+    })
+  } else {
+    await verifyCode({ channel, target, code })
+  }
+
   return apiSuccess(undefined, "验证码校验通过")
 }, {
   errorMessage: "验证码校验失败",

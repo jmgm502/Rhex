@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/rbutton"
-import { formatDateTime, formatNumber } from "@/lib/formatters"
+import { formatCompactPointValue, formatDateTime } from "@/lib/formatters"
 
 interface TopupResultPageProps {
   merchantOrderNo: string
@@ -108,7 +108,7 @@ export function TopupResultPage({ merchantOrderNo, pointName, initialStatus }: T
         : "支付成功，正在到账"
 
   const description = succeeded
-    ? `本次充值已完成，${status.topup?.totalPoints ?? 0} ${pointName} 已到账。`
+    ? `本次充值已完成，${formatCompactPointValue(status.topup?.totalPoints ?? 0)} ${pointName} 已到账。`
     : failed
       ? (status.lastErrorMessage || "订单未完成，请返回充值页重新发起。")
       : waitingPayment
@@ -154,12 +154,12 @@ export function TopupResultPage({ merchantOrderNo, pointName, initialStatus }: T
           <div className="mt-4 rounded-xl border border-border/70 bg-background/80 p-4">
             <p className="text-sm font-semibold">{status.topup.title}</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              基础 {formatNumber(status.topup.points)} {pointName}
-              {status.topup.bonusPoints > 0 ? ` + 赠送 ${formatNumber(status.topup.bonusPoints)} ${pointName}` : ""}
+              基础 {formatCompactPointValue(status.topup.points)} {pointName}
+              {status.topup.bonusPoints > 0 ? ` + 赠送 ${formatCompactPointValue(status.topup.bonusPoints)} ${pointName}` : ""}
             </p>
-            <p className="mt-1 text-lg font-semibold">共到账 {formatNumber(status.topup.totalPoints)} {pointName}</p>
+            <p className="mt-1 text-lg font-semibold">共到账 {formatCompactPointValue(status.topup.totalPoints)} {pointName}</p>
             {typeof status.userBalance === "number" ? (
-              <p className="mt-1 text-sm text-muted-foreground">当前余额 {formatNumber(status.userBalance)} {pointName}</p>
+              <p className="mt-1 text-sm text-muted-foreground">当前余额 {formatCompactPointValue(status.userBalance)} {pointName}</p>
             ) : null}
           </div>
         ) : null}

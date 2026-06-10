@@ -365,6 +365,10 @@ export const ADDON_ACTION_HOOK_NAMES = [
   "user.update.after",
   "user.notification-settings.update.before",
   "user.notification-settings.update.after",
+  "sms.verification-code.send.before",
+  "sms.verification-code.send.after",
+  "sms.verification-code.verify.before",
+  "sms.verification-code.verify.after",
   "addon.config.changed.before",
   "addon.config.changed.after",
   // ─── 以下为 v2 扩展 hook（类型映射见 AddonActionHookPayloadMap） ───
@@ -453,6 +457,7 @@ export const ADDON_ASYNC_WATERFALL_HOOK_NAMES = [
   "post.content.render",
   "points.settlement.resolve",
   "post.tip.summary",
+  "user.profile.introduction.permission",
 ] as const
 
 export type AddonActionHookName = (typeof ADDON_ACTION_HOOK_NAMES)[number]
@@ -846,6 +851,26 @@ export interface AddonUserProfileRecord {
   activityVisibility: AddonUserProfileVisibility
   introductionVisibility: AddonUserProfileVisibility
   points: number
+}
+
+export interface AddonUserProfileIntroductionPermissionValue {
+  allowed: boolean
+  reason?: string | null
+}
+
+export type AddonUserProfileIntroductionPermissionAction = "edit" | "view"
+
+export interface AddonUserProfileIntroductionPermissionUser {
+  id: number
+  username: string
+  role: string
+  status: string
+  level: number
+  vipLevel: number
+  vipExpiresAt?: string | null
+  isVip: boolean
+  verificationTypeIds: string[]
+  badgeIds: string[]
 }
 
 export type AddonTaskCategory = "NEWBIE" | "DAILY" | "CHALLENGE"
@@ -1296,6 +1321,69 @@ export interface AddonSmsApi {
   send: (input: AddonSmsSendInput) => Promise<AddonSmsSendResult>
 }
 
+export interface AddonSmsProviderSendInput {
+  phone: string
+  code?: string
+  scene?: string
+  templateCode?: string
+  templateParam?: Record<string, unknown>
+  signName?: string
+  outId?: string
+}
+
+export interface AddonSmsProviderSendResult {
+  provider?: string
+  sent?: boolean
+  messageId?: string | null
+  requestId?: string | null
+}
+
+export interface AddonSmsVerificationCodeSendInput {
+  phone: string
+  purpose: string
+  requestIp?: string | null
+  userAgent?: string | null
+  userId?: number | null
+}
+
+export interface AddonSmsVerificationCodeSendResult {
+  handled?: boolean
+  sent?: boolean
+  provider?: string
+  expiresAt?: string | null
+  message?: string | null
+  messageId?: string | null
+  requestId?: string | null
+}
+
+export interface AddonSmsVerificationCodeVerifyInput {
+  phone: string
+  code: string
+  purpose: string
+  requestIp?: string | null
+  userAgent?: string | null
+  userId?: number | null
+}
+
+export interface AddonSmsVerificationCodeVerifyResult {
+  handled?: boolean
+  ok?: boolean
+  provider?: string
+  message?: string | null
+  verifiedAt?: string | null
+}
+
+export interface AddonSmsProviderRuntimeHooks {
+  isRunnable?: (input: AddonSmsProviderSendInput) => AddonMaybePromise<boolean>
+  send?: (input: AddonSmsProviderSendInput) => AddonMaybePromise<AddonSmsProviderSendResult | void>
+  sendVerificationCode?: (
+    input: AddonSmsVerificationCodeSendInput,
+  ) => AddonMaybePromise<AddonSmsVerificationCodeSendResult | boolean | void>
+  verifyVerificationCode?: (
+    input: AddonSmsVerificationCodeVerifyInput,
+  ) => AddonMaybePromise<AddonSmsVerificationCodeVerifyResult | boolean | string | void>
+}
+
 export interface AddonUserFollowInput {
   followerId?: number
   followerUsername?: string
@@ -1742,6 +1830,47 @@ export interface AddonActionHookPayloadMap {
     contentAdjusted: boolean
     profile: AddonUserProfileRecord
   }
+  // ─── 短信验证码 ───
+  "sms.verification-code.send.before": {
+    phone: string
+    purpose: string
+    requestIp?: string | null
+    userAgent?: string | null
+    userId?: number | null
+    handledByProvider?: string | null
+  }
+  "sms.verification-code.send.after": {
+    phone: string
+    purpose: string
+    requestIp?: string | null
+    userAgent?: string | null
+    userId?: number | null
+    provider: string
+    handledByProvider: boolean
+    expiresAt?: string | null
+    sent: boolean
+    messageId?: string | null
+    requestId?: string | null
+  }
+  "sms.verification-code.verify.before": {
+    phone: string
+    purpose: string
+    requestIp?: string | null
+    userAgent?: string | null
+    userId?: number | null
+    handledByProvider?: string | null
+  }
+  "sms.verification-code.verify.after": {
+    phone: string
+    purpose: string
+    requestIp?: string | null
+    userAgent?: string | null
+    userId?: number | null
+    provider: string
+    handledByProvider: boolean
+    ok: boolean
+    verifiedAt: string
+  }
   // ─── 举报 ───
   "report.create.before": {
     reporterId: number
@@ -2034,6 +2163,7 @@ export interface AddonAsyncWaterfallHookValueMap {
   "post.content.render": string
   "points.settlement.resolve": AddonPointSettlementValue
   "post.tip.summary": AddonTipSummaryValue
+  "user.profile.introduction.permission": AddonUserProfileIntroductionPermissionValue
 }
 
 export interface AddonAsyncWaterfallHookPayloadMap {
@@ -2076,6 +2206,12 @@ export interface AddonAsyncWaterfallHookPayloadMap {
     postId?: string
     commentId?: string
     currentUserId?: number
+  }
+  "user.profile.introduction.permission": {
+    action: AddonUserProfileIntroductionPermissionAction
+    owner: AddonUserProfileIntroductionPermissionUser
+    viewer?: AddonUserProfileIntroductionPermissionUser | null
+    isOwner: boolean
   }
 }
 

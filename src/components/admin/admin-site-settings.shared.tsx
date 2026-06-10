@@ -43,6 +43,7 @@ export interface AdminBasicSettingsInitialSettings {
   homeSidebarStatsCardEnabled: boolean
   homeSidebarAnnouncementsEnabled: boolean
   userProfileIpLocationEnabled: boolean
+  userProfileIntroductionEnabled: boolean
   leftSidebarDisplayMode: LeftSidebarDisplayMode
   leftSidebarNavigationMode: LeftSidebarNavigationMode
   leftSidebarHome: LeftSidebarHomeSettings
@@ -187,6 +188,7 @@ export interface AdminBasicSettingsDraft {
   homeSidebarStatsCardEnabled: boolean
   homeSidebarAnnouncementsEnabled: boolean
   userProfileIpLocationEnabled: boolean
+  userProfileIntroductionEnabled: boolean
   leftSidebarDisplayMode: LeftSidebarDisplayMode
   leftSidebarNavigationMode: LeftSidebarNavigationMode
   leftSidebarHomeEnabled: boolean
@@ -427,6 +429,7 @@ export function createAdminBasicSettingsDraft(initialSettings: AdminBasicSetting
     homeSidebarStatsCardEnabled: coerceBoolean(initialSettings.homeSidebarStatsCardEnabled, true),
     homeSidebarAnnouncementsEnabled: coerceBoolean(initialSettings.homeSidebarAnnouncementsEnabled, true),
     userProfileIpLocationEnabled: coerceBoolean(initialSettings.userProfileIpLocationEnabled, false),
+    userProfileIntroductionEnabled: coerceBoolean(initialSettings.userProfileIntroductionEnabled, true),
     leftSidebarDisplayMode: initialSettings.leftSidebarDisplayMode ?? "DEFAULT",
     leftSidebarNavigationMode: initialSettings.leftSidebarNavigationMode ?? "DEFAULT",
     leftSidebarHomeEnabled: coerceBoolean(initialSettings.leftSidebarHome?.enabled, true),
@@ -597,6 +600,7 @@ export function buildAdminBasicSettingsPayload(draft: AdminBasicSettingsDraft, m
       homeSidebarStatsCardEnabled: draft.homeSidebarStatsCardEnabled,
       homeSidebarAnnouncementsEnabled: draft.homeSidebarAnnouncementsEnabled,
       userProfileIpLocationEnabled: draft.userProfileIpLocationEnabled,
+      userProfileIntroductionEnabled: draft.userProfileIntroductionEnabled,
       leftSidebarDisplayMode: draft.leftSidebarDisplayMode,
       leftSidebarNavigationMode: draft.leftSidebarNavigationMode,
       leftSidebarHome: {

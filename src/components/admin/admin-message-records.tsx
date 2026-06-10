@@ -11,10 +11,11 @@ import {
   AdminFilterSearchField,
   AdminFilterSelectField,
 } from "@/components/admin/admin-filter-card"
+import { AdminPaginationBar } from "@/components/admin/admin-pagination-bar"
 import { AdminSummaryStrip } from "@/components/admin/admin-summary-strip"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardAction,
@@ -279,6 +280,14 @@ function ConversationListCard({
         <CardTitle>会话列表</CardTitle>
         <CardDescription>按最近更新时间展示匹配的私信会话。</CardDescription>
       </CardHeader>
+      {conversations.length > 0 ? (
+        <AdminPaginationBar
+          pagination={pagination}
+          buildPageHref={buildPageHref}
+          itemLabel="个会话"
+          className="border-b border-border px-4 py-3"
+        />
+      ) : null}
       <CardContent className="p-0">
         {conversations.length === 0 ? (
           <EmptyState
@@ -299,28 +308,13 @@ function ConversationListCard({
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t">
-        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-          <span>第 {pagination.page} / {pagination.totalPages} 页</span>
-          <span>共 {formatNumber(pagination.total)} 个会话</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <PaginationLink
-            href={pagination.hasPrevPage ? buildPageHref(pagination.page - 1) : "#"}
-            disabled={!pagination.hasPrevPage}
-          >
-            上一页
-          </PaginationLink>
-          <Badge variant="secondary" className="h-8 rounded-full px-3 text-sm">
-            {pagination.page}
-          </Badge>
-          <PaginationLink
-            href={pagination.hasNextPage ? buildPageHref(pagination.page + 1) : "#"}
-            disabled={!pagination.hasNextPage}
-          >
-            下一页
-          </PaginationLink>
-        </div>
+      <CardFooter>
+        <AdminPaginationBar
+          pagination={pagination}
+          buildPageHref={buildPageHref}
+          itemLabel="个会话"
+          className="w-full"
+        />
       </CardFooter>
     </Card>
   )
@@ -404,6 +398,14 @@ function ConversationDetailCard({
           </Badge>
         </CardAction>
       </CardHeader>
+      <AdminPaginationBar
+        pagination={conversation.messagePagination}
+        buildPageHref={buildDetailPageHref}
+        itemLabel="条消息"
+        className="border-b border-border px-4 py-3"
+        previousLabel="较新"
+        nextLabel="更早"
+      />
       <CardContent className="flex flex-col gap-4 p-4">
         <div className="flex flex-wrap gap-2">
           {conversation.participants.map((participant) => (
@@ -417,30 +419,21 @@ function ConversationDetailCard({
           ))}
         </div>
       </CardContent>
-      <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t">
+      <CardFooter className="flex-col items-stretch gap-3">
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           <span>会话 ID: {conversation.id}</span>
           <span>创建 {conversation.createdAt}</span>
           <span>更新 {conversation.updatedAt}</span>
           <span>共 {formatNumber(conversation.messagePagination.total)} 条</span>
         </div>
-        <div className="flex items-center gap-2">
-          <PaginationLink
-            href={conversation.messagePagination.hasPrevPage ? buildDetailPageHref(conversation.messagePagination.page - 1) : "#"}
-            disabled={!conversation.messagePagination.hasPrevPage}
-          >
-            较新
-          </PaginationLink>
-          <Badge variant="secondary" className="h-8 rounded-full px-3 text-sm">
-            {conversation.messagePagination.page}
-          </Badge>
-          <PaginationLink
-            href={conversation.messagePagination.hasNextPage ? buildDetailPageHref(conversation.messagePagination.page + 1) : "#"}
-            disabled={!conversation.messagePagination.hasNextPage}
-          >
-            更早
-          </PaginationLink>
-        </div>
+        <AdminPaginationBar
+          pagination={conversation.messagePagination}
+          buildPageHref={buildDetailPageHref}
+          itemLabel="条消息"
+          className="w-full"
+          previousLabel="较新"
+          nextLabel="更早"
+        />
       </CardFooter>
     </Card>
   )
@@ -515,38 +508,6 @@ function EmptyState({ title, description, href }: { title: string; description: 
         重置筛选
       </Button>
     </div>
-  )
-}
-
-function PaginationLink({
-  href,
-  disabled,
-  children,
-}: {
-  href: string
-  disabled: boolean
-  children: React.ReactNode
-}) {
-  if (disabled) {
-    return (
-      <span
-        className={cn(
-          buttonVariants({ variant: "outline", size: "sm" }),
-          "pointer-events-none rounded-full opacity-50",
-        )}
-      >
-        {children}
-      </span>
-    )
-  }
-
-  return (
-    <Link
-      href={href}
-      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "rounded-full")}
-    >
-      {children}
-    </Link>
   )
 }
 

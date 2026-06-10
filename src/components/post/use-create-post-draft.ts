@@ -25,6 +25,7 @@ import {
 import { useCreatePostAiAssist } from "@/components/post/use-create-post-ai-assist"
 import { useCreatePostLottery } from "@/components/post/use-create-post-lottery"
 import { useCreatePostTags } from "@/components/post/use-create-post-tags"
+import { formatCompactPointValue } from "@/lib/formatters"
 
 interface UseCreatePostDraftOptions {
   boardOptions: CreatePostFormBoardGroup[]
@@ -180,7 +181,7 @@ export function useCreatePostDraft({
   const canAddAttachments = canBypassAttachmentPermission || meetsAttachmentPermission
   const canManageAttachments = isEditMode || canAddAttachments || draft.attachments.length > 0
   const shouldShowAttachmentEntry = canAddAttachments || draft.attachments.length > 0
-  const currentUserSummary = `${currentUser.nickname ?? currentUser.username} · Lv.${currentUser.level} · ${currentUser.points} ${pointName} ${isVipActive ? `· VIP ${currentVipLevel}` : "· 非 VIP"}`
+  const currentUserSummary = `${currentUser.nickname ?? currentUser.username} · Lv.${currentUser.level} · ${formatCompactPointValue(currentUser.points)} ${pointName} ${isVipActive ? `· VIP ${currentVipLevel}` : "· 非 VIP"}`
   const currentUserVipClassName = getVipNameClass(isVipActive, currentUser.vipLevel, {
     medium: true,
     interactive: false,

@@ -1,11 +1,12 @@
 "use client"
 
-import { Copy, PauseCircle, PlayCircle, Plus, Save, ShieldCheck, TimerReset, Trash2 } from "lucide-react"
-import { useMemo, useState } from "react"
+import { Archive, Copy, PauseCircle, PlayCircle, Plus, Save, ShieldCheck, TimerReset, Trash2 } from "lucide-react"
+import { useMemo, useRef, useState } from "react"
 
 import { AdminSummaryStrip } from "@/components/admin/admin-summary-strip"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { showConfirm } from "@/components/ui/alert-dialog"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { FormModal } from "@/components/ui/modal"
@@ -193,14 +194,14 @@ function getNextStatusActions(status: TaskDefinitionStatus) {
   if (status === TaskDefinitionStatus.ACTIVE) {
     return [
       { status: TaskDefinitionStatus.PAUSED, label: "暂停", icon: PauseCircle },
-      { status: TaskDefinitionStatus.ARCHIVED, label: "归档", icon: Trash2 },
+      { status: TaskDefinitionStatus.ARCHIVED, label: "归档", icon: Archive },
     ] as const
   }
 
   if (status === TaskDefinitionStatus.PAUSED) {
     return [
       { status: TaskDefinitionStatus.ACTIVE, label: "启用", icon: PlayCircle },
-      { status: TaskDefinitionStatus.ARCHIVED, label: "归档", icon: Trash2 },
+      { status: TaskDefinitionStatus.ARCHIVED, label: "归档", icon: Archive },
     ] as const
   }
 
@@ -238,12 +239,23 @@ function buildConditionConfigForTemplate(draft: TaskDraft) {
   }
 }
 
+function createTaskRequestId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID()
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
 export function AdminTaskManager({ initialTasks, boardOptions }: AdminTaskManagerProps) {
   const [tasks, setTasks] = useState(initialTasks)
   const [draft, setDraft] = useState<TaskDraft>(createEmptyTaskDraft())
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [activeActionKey, setActiveActionKey] = useState<string | null>(null)
+  const activeActionRef = useRef<string | null>(null)
   const { isPending, runMutation } = useAdminMutation()
+  const isBusy = Boolean(activeActionKey) || isPending
 
   const stats = useMemo(() => ({
     total: tasks.length,
@@ -312,6 +324,7 @@ export function AdminTaskManager({ initialTasks, boardOptions }: AdminTaskManage
   function runTaskMutation(
     body: Record<string, unknown>,
     options: {
+      actionKey: string
       successTitle: string
       errorTitle: string
       successMessage: string
@@ -319,6 +332,12 @@ export function AdminTaskManager({ initialTasks, boardOptions }: AdminTaskManage
       onSuccess?: () => void | Promise<void>
     },
   ) {
+    if (activeActionRef.current) {
+      return
+    }
+
+    activeActionRef.current = options.actionKey
+    setActiveActionKey(options.actionKey)
     runMutation({
       mutation: async () => {
         const result = await adminPost("/api/admin/tasks", body, {
@@ -333,6 +352,10 @@ export function AdminTaskManager({ initialTasks, boardOptions }: AdminTaskManage
       refreshRouter: true,
       onSuccess: async () => {
         await options.onSuccess?.()
+      },
+      onSettled: () => {
+        activeActionRef.current = null
+        setActiveActionKey(null)
       },
     })
   }
@@ -355,9 +378,14 @@ export function AdminTaskManager({ initialTasks, boardOptions }: AdminTaskManage
 
   function submitDraft(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (activeActionRef.current) {
+      return
+    }
+
     runTaskMutation({
       action: "save",
       id: editingId ?? undefined,
+      requestId: editingId ? undefined : createTaskRequestId(),
       title: draft.title,
       description: draft.description,
       category: draft.category,
@@ -374,6 +402,7 @@ export function AdminTaskManager({ initialTasks, boardOptions }: AdminTaskManage
       endsAt: toIsoDateTimeValue(draft.endsAt),
       conditionConfig: buildConditionConfigForTemplate(draft),
     }, {
+      actionKey: editingId ? `save:${editingId}` : "create",
       successTitle: editingId ? "保存成功" : "创建成功",
       errorTitle: editingId ? "保存失败" : "创建失败",
       successMessage: editingId ? "任务已更新" : "任务已创建",
@@ -387,6 +416,7 @@ export function AdminTaskManager({ initialTasks, boardOptions }: AdminTaskManage
 
   function submitDuplicate(id: string) {
     runTaskMutation({ action: "duplicate", id }, {
+      actionKey: `duplicate:${id}`,
       successTitle: "复制成功",
       errorTitle: "复制失败",
       successMessage: "任务副本已创建",
@@ -396,10 +426,40 @@ export function AdminTaskManager({ initialTasks, boardOptions }: AdminTaskManage
 
   function submitStatus(id: string, status: TaskDefinitionStatus) {
     runTaskMutation({ action: "update-status", id, status }, {
+      actionKey: `status:${id}:${status}`,
       successTitle: "状态已更新",
       errorTitle: "状态更新失败",
       successMessage: "任务状态已更新",
       errorMessage: "任务状态更新失败",
+    })
+  }
+
+  async function submitDelete(item: AdminTaskItem) {
+    if (activeActionRef.current) {
+      return
+    }
+
+    const confirmed = await showConfirm({
+      title: "删除任务",
+      description: `确认彻底删除任务“${item.title}”吗？删除后该任务的用户进度和事件记录也会被移除，无法恢复。`,
+      confirmText: "删除",
+      variant: "danger",
+    })
+    if (!confirmed) {
+      return
+    }
+
+    runTaskMutation({ action: "delete", id: item.id }, {
+      actionKey: `delete:${item.id}`,
+      successTitle: "删除成功",
+      errorTitle: "删除失败",
+      successMessage: "任务已删除",
+      errorMessage: "任务删除失败",
+      onSuccess: () => {
+        if (editingId === item.id) {
+          setEditingId(null)
+        }
+      },
     })
   }
 
@@ -408,8 +468,9 @@ export function AdminTaskManager({ initialTasks, boardOptions }: AdminTaskManage
       <Card>
         <CardHeader className="border-b">
           <CardTitle>任务系统</CardTitle>
+          <CardDescription>配置前台 /tasks 任务中心的成长任务。用户完成签到、发帖、回复、点赞、关注等行为后，系统按任务周期和 VIP 等级发放积分奖励。</CardDescription>
           <CardAction>
-            <Button type="button" className="rounded-full" onClick={openCreate}>
+            <Button type="button" className="rounded-full" disabled={isBusy} onClick={openCreate}>
               <Plus className="mr-2 h-4 w-4" />
               新建任务
             </Button>
@@ -441,20 +502,24 @@ export function AdminTaskManager({ initialTasks, boardOptions }: AdminTaskManage
                       <CardDescription>{item.description || item.conditionSummary}</CardDescription>
                     </div>
                     <CardAction className="flex flex-wrap items-center gap-2">
-                      <Button type="button" variant="outline" size="sm" onClick={() => openEdit(item)}>编辑</Button>
-                      <Button type="button" variant="outline" size="sm" onClick={() => submitDuplicate(item.id)}>
+                      <Button type="button" variant="outline" size="sm" disabled={isBusy} onClick={() => openEdit(item)}>编辑</Button>
+                      <Button type="button" variant="outline" size="sm" disabled={isBusy} onClick={() => submitDuplicate(item.id)}>
                         <Copy className="mr-1.5 h-3.5 w-3.5" />
                         复制
                       </Button>
                       {getNextStatusActions(item.status).map((action) => {
                         const Icon = action.icon
                         return (
-                          <Button key={`${item.id}:${action.status}`} type="button" variant="ghost" size="sm" onClick={() => submitStatus(item.id, action.status)}>
+                          <Button key={`${item.id}:${action.status}`} type="button" variant="ghost" size="sm" disabled={isBusy} onClick={() => submitStatus(item.id, action.status)}>
                             <Icon className="mr-1.5 h-3.5 w-3.5" />
                             {action.label}
                           </Button>
                         )
                       })}
+                      <Button type="button" variant="destructive" size="sm" disabled={isBusy} onClick={() => void submitDelete(item)}>
+                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                        删除
+                      </Button>
                     </CardAction>
                   </CardHeader>
                   <CardContent className="space-y-3 p-4">
@@ -488,27 +553,29 @@ export function AdminTaskManager({ initialTasks, boardOptions }: AdminTaskManage
       <FormModal
         open={modalOpen}
         onClose={() => {
-          if (isPending) {
+          if (isBusy) {
             return
           }
           setModalOpen(false)
           resetDraft()
         }}
+        closeDisabled={isBusy}
+        closeOnEscape={!isBusy}
         title={editingId ? "编辑任务" : "新建任务"}
         description="奖励字段支持固定值 `5` 或随机区间 `5-10`。保存后，任务中心未完成任务会同步展示最新配置；已完成任务保留实际结算积分。"
         size="lg"
         onSubmit={submitDraft}
         footer={({ formId }) => (
           <>
-            <Button type="button" variant="ghost" onClick={() => {
+            <Button type="button" variant="ghost" disabled={isBusy} onClick={() => {
               setModalOpen(false)
               resetDraft()
             }}>
               取消
             </Button>
-            <Button type="submit" form={formId} disabled={isPending}>
+            <Button type="submit" form={formId} disabled={isBusy}>
               <Save className="mr-2 h-4 w-4" />
-              {isPending ? "保存中..." : editingId ? "保存任务" : "创建任务"}
+              {isBusy ? "保存中..." : editingId ? "保存任务" : "创建任务"}
             </Button>
           </>
         )}

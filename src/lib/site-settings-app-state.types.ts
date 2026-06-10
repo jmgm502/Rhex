@@ -218,6 +218,7 @@ export interface SiteBrandingSettings {
 
 export interface UserProfileDisplaySettings {
   ipLocationEnabled: boolean
+  introductionEnabled: boolean
 }
 
 export type SiteThemeCustomizationSettings = ThemeCustomizationSettings

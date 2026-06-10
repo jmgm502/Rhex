@@ -159,6 +159,8 @@ function classifyInstallPermissionRisk(permission: string) {
     "message:send",
     "notification:create",
     "email:send",
+    "sms:send",
+    "sms:integrate",
     "follow:user",
     "points:adjust",
     "badge:grant",

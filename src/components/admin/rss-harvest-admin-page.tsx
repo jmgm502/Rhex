@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 
+import { AdminClientPaginationBar } from "@/components/admin/admin-pagination-bar"
 import { FormModal, Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/rbutton"
 import { showConfirm } from "@/components/ui/alert-dialog"
@@ -704,6 +705,17 @@ export function RssHarvestAdminPage({ initialData }: RssHarvestAdminPageProps) {
         </div>
 
         {data.sources.length === 0 ? <p className="text-sm text-muted-foreground">当前没有 RSS 任务，先在上方创建一个源。</p> : null}
+        {data.sourcePagination.totalPages > 1 ? (
+          <AdminClientPaginationBar
+            pagination={data.sourcePagination}
+            itemLabel="个源"
+            loading={loadingData}
+            onPageChange={(page) => {
+              setSourcePage(page)
+              void loadAdminData(page)
+            }}
+          />
+        ) : null}
 
         <div className="space-y-3">
           {data.sources.map((source) => (
@@ -750,14 +762,18 @@ export function RssHarvestAdminPage({ initialData }: RssHarvestAdminPageProps) {
           ))}
         </div>
 
-        <ClientPagination
-          pagination={data.sourcePagination}
-          loading={loadingData}
-          onChange={(page) => {
-            setSourcePage(page)
-            void loadAdminData(page)
-          }}
-        />
+        {data.sourcePagination.totalPages > 1 ? (
+          <AdminClientPaginationBar
+            pagination={data.sourcePagination}
+            itemLabel="个源"
+            loading={loadingData}
+            className="border-t border-border pt-4"
+            onPageChange={(page) => {
+              setSourcePage(page)
+              void loadAdminData(page)
+            }}
+          />
+        ) : null}
       </section>
 
       <section className="grid gap-6 xl:grid-cols-2">

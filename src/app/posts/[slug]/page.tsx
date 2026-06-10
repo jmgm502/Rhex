@@ -186,8 +186,8 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
   const canViewOfflinePost = basePost.status === "OFFLINE" && isOwnerOrManager
   const canViewModeratedPost = canViewPendingPost || canViewOfflinePost
 
-  const viewPermission = boardAccessContext ? checkBoardPermission(currentUser, boardAccessContext.settings, "view") : { allowed: true, message: "" }
-  const replyPermission = boardAccessContext ? checkBoardPermission(currentUser, boardAccessContext.settings, "reply") : { allowed: true, message: "" }
+  const viewPermission = boardAccessContext ? checkBoardPermission(currentUser, boardAccessContext.settings, "view", settings.pointName) : { allowed: true, message: "" }
+  const replyPermission = boardAccessContext ? checkBoardPermission(currentUser, boardAccessContext.settings, "reply", settings.pointName) : { allowed: true, message: "" }
   const postViewPermission = checkPostAccessPermission(currentUser, resolvePostAccessRequirements(basePost))
   const mergedViewPermission = mergeAccessPermissions(viewPermission, postViewPermission)
   const canViewPublicPost = isPublicReadablePostStatus(basePost.status)

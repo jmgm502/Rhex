@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useState, useTransition } from "react"
 
+import { AdminClientPaginationBar } from "@/components/admin/admin-pagination-bar"
 import { useConfirm } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/rbutton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -581,6 +582,14 @@ export function PaymentGatewayAdminPage({ initialData }: PaymentGatewayAdminPage
           </div>
         </CardHeader>
         <CardContent className="space-y-3 py-5">
+          {data.recentOrdersPagination.totalPages > 1 ? (
+            <AdminClientPaginationBar
+              pagination={data.recentOrdersPagination}
+              itemLabel="条记录"
+              loading={isLogsLoading}
+              onPageChange={(page) => void loadOrdersPage(page)}
+            />
+          ) : null}
           {data.recentOrders.length > 0 ? data.recentOrders.map((order) => (
             <div key={order.id} className="rounded-xl border border-border p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -611,34 +620,13 @@ export function PaymentGatewayAdminPage({ initialData }: PaymentGatewayAdminPage
             </div>
           )}
           {data.recentOrdersPagination.totalPages > 1 ? (
-            <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
-                第 {data.recentOrdersPagination.page} / {data.recentOrdersPagination.totalPages} 页，每页 {data.recentOrdersPagination.pageSize} 条
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={!data.recentOrdersPagination.hasPrevPage || isLogsLoading}
-                  onClick={() => void loadOrdersPage(data.recentOrdersPagination.page - 1)}
-                >
-                  上一页
-                </Button>
-                <span className="inline-flex h-8 min-w-10 items-center justify-center rounded-full border border-border bg-muted px-3 text-sm font-medium">
-                  {data.recentOrdersPagination.page}
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={!data.recentOrdersPagination.hasNextPage || isLogsLoading}
-                  onClick={() => void loadOrdersPage(data.recentOrdersPagination.page + 1)}
-                >
-                  下一页
-                </Button>
-              </div>
-            </div>
+            <AdminClientPaginationBar
+              pagination={data.recentOrdersPagination}
+              itemLabel="条记录"
+              loading={isLogsLoading}
+              className="border-t border-border pt-4"
+              onPageChange={(page) => void loadOrdersPage(page)}
+            />
           ) : null}
         </CardContent>
       </Card>

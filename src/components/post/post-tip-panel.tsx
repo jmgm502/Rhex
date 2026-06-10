@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/rbutton"
 import { Tooltip } from "@/components/ui/tooltip"
 import { toast } from "@/components/ui/toast"
 import { buildLoginHrefWithRedirect, getCurrentBrowserAuthRedirectTarget } from "@/lib/auth-redirect"
-import { formatCompactNumber, formatNumber } from "@/lib/formatters"
+import { formatCompactNumber, formatCompactPointValue, formatNumber } from "@/lib/formatters"
 import type { SiteTippingGiftItem } from "@/lib/site-settings"
 import { cn } from "@/lib/utils"
 
@@ -229,7 +229,7 @@ export function PostTipPanel({
   )
   const totalGiftCount = useMemo(() => giftSummary.reduce((total, item) => total + item.totalCount, 0), [giftSummary])
   const triggerTooltip = tipTotalPoints > 0
-    ? `本${targetLabel}已收到 ${totalGiftCount > 0 ? `${formatCompactNumber(totalGiftCount)} 份礼物，` : ""}${formatNumber(tipTotalPoints)} ${pointName}`
+    ? `本${targetLabel}已收到 ${totalGiftCount > 0 ? `${formatCompactNumber(totalGiftCount)} 份礼物，` : ""}${formatCompactPointValue(tipTotalPoints)} ${pointName}`
     : `送礼或积分打赏支持${supportTargetLabel}`
 
   const clearAnimationTimers = useCallback(() => {
@@ -383,7 +383,7 @@ export function PostTipPanel({
           syncSummary(result.data)
         }
 
-        const successMessage = result.message ?? (targetGift ? `已送出 ${targetGift.name}` : `已成功打赏 ${formatNumber(targetAmount)} ${pointName}`)
+        const successMessage = result.message ?? (targetGift ? `已送出 ${targetGift.name}` : `已成功打赏 ${formatCompactPointValue(targetAmount)} ${pointName}`)
         setMessage(successMessage)
         toast.success(successMessage, mode === "gift" ? "送礼成功" : "打赏成功")
       } catch {
@@ -522,7 +522,7 @@ export function PostTipPanel({
                       : "ml-0 max-w-0 opacity-0 text-amber-700 dark:text-amber-200 group-hover/tip-trigger:ml-1.5 group-hover/tip-trigger:max-w-[88px] group-hover/tip-trigger:opacity-100 group-focus-visible/tip-trigger:ml-1.5 group-focus-visible/tip-trigger:max-w-[88px] group-focus-visible/tip-trigger:opacity-100",
                   )}
                 >
-                  + {tipTotalPoints}
+                  + {formatCompactPointValue(tipTotalPoints)}
                 </span>
               </span>
             </span>
@@ -590,7 +590,7 @@ export function PostTipPanel({
                       {formatCompactNumber(giftStat.totalCount)}
                     </div>
                   ) : null}
-                  <Tooltip content={`${gift.name} · ${formatNumber(gift.price)} ${pointName}${giftStat?.totalCount ? ` · 已收 ${formatCompactNumber(giftStat.totalCount)} 个` : ""}`}>
+                  <Tooltip content={`${gift.name} · ${formatCompactPointValue(gift.price)} ${pointName}${giftStat?.totalCount ? ` · 已收 ${formatCompactNumber(giftStat.totalCount)} 个` : ""}`}>
                     <button
                       ref={(node) => {
                         giftButtonRefs.current[gift.id] = node
@@ -627,7 +627,7 @@ export function PostTipPanel({
             <div className="mt-2.5 space-y-2.5 border-t border-border/70 pt-2.5">
               <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                 <span>积分打赏</span>
-                <span>{pointName} {formatNumber(points)} · 累计 {formatNumber(tipTotalPoints)}</span>
+                <span>{pointName} {formatCompactPointValue(points)} · 累计 {formatCompactPointValue(tipTotalPoints)}</span>
               </div>
               <div className="grid grid-cols-4 gap-1.5">
                 {allowedAmounts.map((amount) => (
@@ -640,7 +640,7 @@ export function PostTipPanel({
                     )}
                     onClick={() => setSelectedAmount(amount)}
                   >
-                    {amount}
+                    {formatCompactPointValue(amount)}
                   </button>
                 ))}
               </div>
@@ -652,7 +652,7 @@ export function PostTipPanel({
 
               <div className="flex items-center justify-between gap-3">
                 <Button type="button" onClick={() => handleTip({ mode: "tip", amount: effectiveSelectedAmount })} disabled={!canTip || isPending} className="h-8 rounded-xl px-3.5 text-xs">
-                  {isPending ? "打赏中..." : effectiveSelectedAmount > 0 ? `打赏 ${formatNumber(effectiveSelectedAmount)} ${pointName}` : "选择金额"}
+                  {isPending ? "打赏中..." : effectiveSelectedAmount > 0 ? `打赏 ${formatCompactPointValue(effectiveSelectedAmount)} ${pointName}` : "选择金额"}
                 </Button>
                 {!isLoggedIn ? (
                   <Link href={buildLoginHrefWithRedirect(currentLoginRedirectTarget)} className="text-xs text-primary hover:opacity-80">
@@ -684,7 +684,7 @@ export function PostTipPanel({
                           <p className="truncate text-[11px] font-medium leading-4">{supporter.nickname ?? supporter.username}</p>
                           <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-300">
                             <Zap className="h-3 w-3 fill-current" />
-                            +{formatNumber(supporter.totalAmount)}
+                            +{formatCompactPointValue(supporter.totalAmount)}
                           </div>
                         </div>
                       </div>
@@ -747,10 +747,10 @@ export function PostTipPanel({
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-base font-semibold">{pendingGiftConfirmation.gift.name}</p>
-              <p className="mt-1 text-sm text-muted-foreground">价格：{formatNumber(pendingGiftConfirmation.gift.price)} {pointName}</p>
+              <p className="mt-1 text-sm text-muted-foreground">价格：{formatCompactPointValue(pendingGiftConfirmation.gift.price)} {pointName}</p>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">当前余额：{formatNumber(points)} {pointName}</p>
+          <p className="text-sm text-muted-foreground">当前余额：{formatCompactPointValue(points)} {pointName}</p>
         </div>
       ) : null}
     </Modal>

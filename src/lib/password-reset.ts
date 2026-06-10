@@ -4,6 +4,10 @@ import { VerificationChannel } from "@/lib/shared/verification-channel"
 
 import { findUserByEmail, findUserByPhone, updateUserPasswordById } from "@/db/password-reset-queries"
 import { executeAddonActionHook } from "@/addons-host/runtime/hooks"
+import {
+  sendSmsVerificationCodeWithAddonProviders,
+  verifySmsVerificationCodeWithAddonProviders,
+} from "@/lib/addon-sms-verification"
 import { apiError } from "@/lib/api-route"
 import { normalizeEmailAddress } from "@/lib/email"
 import { getSiteSettings } from "@/lib/site-settings"
@@ -11,7 +15,7 @@ import { validatePasswordPolicy, type PasswordPolicySettings } from "@/lib/passw
 import { canSendBusinessEmail, sendResetPasswordVerificationEmail } from "@/lib/mailer"
 import { sendVerificationCode, verifyCode } from "@/lib/verification"
 import { isValidMainlandPhone, normalizePhoneNumber } from "@/lib/phone"
-import { canSendSms, sendSmsVerificationCode } from "@/lib/sms"
+import { canSendSms } from "@/lib/sms"
 
 
 const PASSWORD_RESET_PURPOSE = "password_reset"
@@ -87,6 +91,7 @@ export async function sendPasswordResetCode(input: {
 
 export async function sendPasswordResetPhoneCode(input: {
   phone: string
+  request?: Request
   ip?: string | null
   userAgent?: string | null
 }) {
@@ -118,19 +123,13 @@ export async function sendPasswordResetPhoneCode(input: {
     apiError(403, "该手机号尚未完成绑定验证")
   }
 
-  const result = await sendVerificationCode({
-    channel: VerificationChannel.PHONE,
-    target: phone,
-    ip: input.ip,
-    userAgent: input.userAgent,
-    userId: user.id,
-    purpose: PASSWORD_RESET_PURPOSE,
-  })
-
-  await sendSmsVerificationCode({
+  const result = await sendSmsVerificationCodeWithAddonProviders({
+    request: input.request,
     phone,
-    code: result.code,
+    requestIp: input.ip,
+    userAgent: input.userAgent,
     purpose: PASSWORD_RESET_PURPOSE,
+    userId: user.id,
   })
 
   return {
@@ -260,11 +259,12 @@ export async function resetPasswordByPhoneCode(input: {
     apiError(403, "该手机号尚未完成绑定验证")
   }
 
-  await verifyCode({
-    channel: VerificationChannel.PHONE,
-    target: phone,
+  await verifySmsVerificationCodeWithAddonProviders({
+    request: input.request,
+    phone,
     code,
     purpose: PASSWORD_RESET_PURPOSE,
+    userId: user.id,
   })
 
   const hookInput = (() => {

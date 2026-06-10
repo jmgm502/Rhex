@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/rbutton"
 import { cn } from "@/lib/utils"
 import type { AccessThresholdOption } from "@/lib/access-threshold-options"
+import { formatCompactPointValue } from "@/lib/formatters"
 import type { LocalPostDraft } from "@/lib/post-draft"
 
 function formatFileSize(fileSize: number | null) {
@@ -38,7 +39,7 @@ function buildAttachmentPermissionSummary(attachment: LocalPostDraft["attachment
   }
 
   if (Number(attachment.pointsCost) > 0) {
-    summary.push(`${attachment.pointsCost} ${pointName}`)
+    summary.push(`${formatCompactPointValue(Number(attachment.pointsCost))} ${pointName}`)
   }
 
   if (attachment.requireReplyUnlock) {

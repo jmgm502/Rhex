@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/site-header"
 
 
 import { SelfServeAdsIntroPage } from "@/components/self-serve-ads-intro-page"
-import { getSelfServeAdsAppConfig } from "@/lib/app-config"
+import { getSelfServeAdsAppConfig, getSelfServeAdsPanelData } from "@/lib/self-serve-ads"
 import { getSiteSettings } from "@/lib/site-settings"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,8 +19,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 
 export default async function SelfServeAdsPage() {
-  const config = await getSelfServeAdsAppConfig()
-  const AppIntroComponent = SelfServeAdsIntroPage as ComponentType<{ AppId: string; config: Record<string, boolean | number | string> }>
+  const [config, panelData] = await Promise.all([
+    getSelfServeAdsAppConfig(),
+    getSelfServeAdsPanelData(),
+  ])
+  const AppIntroComponent = SelfServeAdsIntroPage as ComponentType<{ AppId: string; config: Record<string, boolean | number | string>; panelData: Awaited<ReturnType<typeof getSelfServeAdsPanelData>> }>
   const funsAppSlotProps = {
     appId: "self-serve-ads",
     appName: "自助广告",
@@ -36,7 +39,7 @@ export default async function SelfServeAdsPage() {
           <div className="space-y-6">
             <AddonSlotRenderer slot="funs.app.content.before" props={funsAppSlotProps} />
             <AddonSurfaceRenderer surface="funs.app.content" props={funsAppSlotProps}>
-              <AppIntroComponent AppId="self-serve-ads" config={config} />
+              <AppIntroComponent AppId="self-serve-ads" config={config} panelData={panelData} />
             </AddonSurfaceRenderer>
             <AddonSlotRenderer slot="funs.app.content.after" props={funsAppSlotProps} />
           </div>

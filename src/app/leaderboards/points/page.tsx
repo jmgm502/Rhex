@@ -1,6 +1,6 @@
 import { LeaderboardPageShell } from "@/components/leaderboards/leaderboard-page-shell"
 import { getPointsLeaderboard, MAX_COMMUNITY_LEADERBOARD_LIMIT } from "@/lib/community-leaderboards"
-import { formatNumber } from "@/lib/formatters"
+import { formatCompactPointValue } from "@/lib/formatters"
 import { getLeaderboardPageChromeData } from "@/lib/leaderboard-page-chrome"
 
 export default async function PointsLeaderboardPage() {
@@ -42,7 +42,7 @@ export default async function PointsLeaderboardPage() {
       renderMetric={() => (
         <>当前余额</>
       )}
-      renderMetricValue={(entry) => `${formatNumber(entry.points)}`}
+      renderMetricValue={(entry) => `${formatCompactPointValue(entry.points)}`}
     />
   )
 }

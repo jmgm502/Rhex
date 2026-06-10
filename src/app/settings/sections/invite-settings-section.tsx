@@ -1,7 +1,7 @@
 import { InviteCodePurchaseCard } from "@/components/invite-code-purchase-card"
 import { InviteLinkCopyButton } from "@/components/invite-link-copy-button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatNumber } from "@/lib/formatters"
+import { formatCompactPointValue } from "@/lib/formatters"
 import type { SettingsPageData } from "@/app/settings/settings-page-loader"
 
 export function InviteSettingsSection({ data }: { data: SettingsPageData }) {
@@ -23,7 +23,7 @@ export function InviteSettingsSection({ data }: { data: SettingsPageData }) {
             <p className="mt-1 text-sm text-muted-foreground">邀请人</p>
           </div>
           <div className="rounded-xl bg-secondary/60 p-4">
-            <p className="text-2xl font-semibold">{formatNumber(settings.inviteRewardInviter)}</p>
+            <p className="text-2xl font-semibold">{formatCompactPointValue(settings.inviteRewardInviter)}</p>
             <p className="mt-1 text-sm text-muted-foreground">邀请成功可得 {settings.pointName}</p>
           </div>
         </div>

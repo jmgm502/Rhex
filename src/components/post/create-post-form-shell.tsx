@@ -25,7 +25,7 @@ import type { CreatePostFormBoardGroup } from "@/components/post/create-post-for
 import type { CreatePostDraftController } from "@/components/post/use-create-post-draft"
 import type { CreatePostSubmitController } from "@/components/post/use-create-post-submit"
 import type { LocalPostType } from "@/lib/post-types"
-import { formatDateTime } from "@/lib/formatters"
+import { formatCompactPointValue, formatDateTime } from "@/lib/formatters"
 
 interface CreatePostFormShellProps {
   boardOptions: CreatePostFormBoardGroup[]
@@ -330,7 +330,7 @@ export function CreatePostFormShell({
                 <span className="flex items-center gap-2 whitespace-nowrap">
                   <span className="font-medium">匿名发布</span>
                   <Tooltip
-                    content={`开启后显示为匿名账号，发布额外扣除 ${anonymousPostPrice} ${pointName}`}
+                    content={`开启后显示为匿名账号，发布额外扣除 ${formatCompactPointValue(anonymousPostPrice)} ${pointName}`}
                     enableMobileTap
                   >
                     <span className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground">
@@ -377,7 +377,7 @@ export function CreatePostFormShell({
                 <p>当前节点仅管理员和版主可发帖。</p>
               ) : null}
               <p>
-                当前节点要求：最低{pointName} {selectedBoard?.minPostPoints ?? 0}
+                当前节点要求：最低{pointName} {formatCompactPointValue(selectedBoard?.minPostPoints ?? 0)}
                 ，最低等级 Lv.{selectedBoard?.minPostLevel ?? 0}，最低 VIP 等级{" "}
                 {minPostVipLevel}，
                 {selectedBoard?.requirePostReview ? "发帖后需审核" : "发帖默认直发"}。
@@ -385,7 +385,7 @@ export function CreatePostFormShell({
               <p>
                 当前账号：
                 <span className={currentUserVipClassName}>{currentUserSummary.split(" · ")[0]}</span>
-                {` · Lv.${currentUser.level} · ${currentUser.points} ${pointName} ${draftController.isVipActive ? `· VIP ${currentVipLevel}` : "· 非 VIP"}`}
+                {` · Lv.${currentUser.level} · ${formatCompactPointValue(currentUser.points)} ${pointName} ${draftController.isVipActive ? `· VIP ${currentVipLevel}` : "· 非 VIP"}`}
               </p>
             </div>
           ) : null}

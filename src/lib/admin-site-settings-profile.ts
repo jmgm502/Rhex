@@ -49,6 +49,9 @@ export async function updateProfileSiteSettingsSection(existing: SiteSettingsRec
     const userProfileIpLocationEnabled = body.userProfileIpLocationEnabled === undefined
       ? existingUserProfileDisplaySettings.ipLocationEnabled
       : Boolean(body.userProfileIpLocationEnabled)
+    const userProfileIntroductionEnabled = body.userProfileIntroductionEnabled === undefined
+      ? existingUserProfileDisplaySettings.introductionEnabled
+      : Boolean(body.userProfileIntroductionEnabled)
     const existingLeftSidebarDisplaySettings = resolveLeftSidebarDisplaySettings({
       appStateJson: existing.appStateJson,
       modeFallback: "DEFAULT",
@@ -157,6 +160,7 @@ export async function updateProfileSiteSettingsSection(existing: SiteSettingsRec
 
     const appStateWithUserProfileDisplay = mergeUserProfileDisplaySettings(appStateWithThemeDefaults, {
       ipLocationEnabled: userProfileIpLocationEnabled,
+      introductionEnabled: userProfileIntroductionEnabled,
     })
 
     const appStateJson = mergeFooterCopyrightSettings(appStateWithUserProfileDisplay, {

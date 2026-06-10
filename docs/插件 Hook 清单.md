@@ -68,6 +68,10 @@
 | `user.update.after` | user | 用户资料更新后执行副作用逻辑（含最新 profile 快照） | `void` |
 | `user.notification-settings.update.before` | user | 用户通知设置写入前执行副作用或拦截逻辑 | `void` |
 | `user.notification-settings.update.after` | user | 用户通知设置更新后执行副作用逻辑 | `void` |
+| `sms.verification-code.send.before` | sms | 短信验证码发送前执行副作用或拦截逻辑 | `void` |
+| `sms.verification-code.send.after` | sms | 短信验证码发送后执行副作用逻辑，payload 含 provider / handledByProvider / expiresAt | `void` |
+| `sms.verification-code.verify.before` | sms | 短信验证码校验前执行副作用或拦截逻辑 | `void` |
+| `sms.verification-code.verify.after` | sms | 短信验证码校验后执行副作用逻辑，payload 含 provider / handledByProvider / verifiedAt | `void` |
 | `addon.config.changed.before` | system | 插件配置写入前执行副作用或拦截逻辑 | `void` |
 | `addon.config.changed.after` | system | 插件配置变更后执行副作用逻辑 | `void` |
 | `auth.logout.before` | auth | 登出清除会话前执行副作用或拦截逻辑 | `void` |
@@ -111,6 +115,8 @@
 - `message.send.before` / `message.send.after` 的 payload 当前都会携带 `conversationKind`（`DIRECT` / `SITE_CHAT`）；其中 `after` 的 `contentAdjusted` 会同时反映插件文本改写和宿主敏感词替换。
 - `report.create.after` 的 payload 当前会携带结构化 `report` 快照；`contentAdjusted` 会同时反映 `report.reasonDetail.value` 改写和宿主敏感词替换。
 - `user.update.after` 的 payload 当前会携带结构化 `profile` 快照；`contentAdjusted` 会同时反映资料字段的插件改写和宿主敏感词替换。
+- `sms.verification-code.send.before` / `verify.before` 会以 `throwOnError: true` 执行，可用于短信验证码发送或校验前的风控阻断；payload 含 `phone`、`purpose`、`requestIp`、`userAgent`、`userId`。
+- `sms.verification-code.send.after` / `verify.after` 可用于审计第三方短信服务结果；payload 里的 `handledByProvider` 表示验证码生成/校验是否被 `sms provider` 完整接管。
 - `task.complete.after` 只会在本轮任务首次完成并完成奖励结算后触发；重复事件、重复点赞、已完成任务不会再次派发。
 - `check-in.submit.before` 会以 `throwOnError: true` 执行，可阻断普通签到或补签；payload 含 `userId/username/action/date/reward/pointName`，补签额外含 `makeUpCost`。
 - `check-in.submit.after` 只在签到动作成功返回前触发；payload 含 `finalReward/points/currentStreak/maxStreak/alreadyCheckedIn`，其中 `alreadyCheckedIn` 可用于识别普通签到重复提交。
@@ -168,12 +174,14 @@
 | `post.content.render` | post | 串行改写帖子正文渲染后的 HTML（代码高亮、LaTeX、Mermaid、表格美化等） | `string` |
 | `points.settlement.resolve` | points | 积分结算写入 `User.points` 前执行，可在当前事务内接管本次结算并返回 `handled: true` | `AddonPointSettlementValue` |
 | `post.tip.summary` | points | 串行改写帖子 / 评论打赏摘要展示，可调整余额、货币名和可用状态 | `AddonTipSummaryValue` |
+| `user.profile.introduction.permission` | user | 串行收紧个人介绍编辑 / 查看权限，可按用户组、VIP、认证、勋章等返回 `allowed: false` | `AddonUserProfileIntroductionPermissionValue` |
 
 补充说明：
 
 - `points.settlement.resolve` 的 `value` 包含 `userId/beforeBalance/baseDelta/finalDelta/scopeKey/pointName/reason/eventType/eventData/relatedType/relatedId/insufficientMessage`。插件返回 `handled: true` 后，宿主跳过默认 `User.points` 写入和默认 `PointLog`。
 - `points.settlement.resolve` 在宿主积分事务内执行，插件侧 `context.database` 会复用当前 transaction client；插件自表写入抛错时会回滚宿主业务事务。
 - `post.tip.summary` 只影响打赏 UI 摘要展示，不负责真实扣款；真实结算仍应通过 `points.settlement.resolve` 接管。
+- `user.profile.introduction.permission` 的 `value` 为 `{ allowed, reason }`，`payload` 含 `action`（`edit` / `view`）、`owner`、`viewer`、`isOwner`。插件返回 `allowed: false` 会隐藏设置中心修改入口、阻断资料保存接口或隐藏用户主页介绍内容；该 hook 只能收紧权限，不能绕过后台个人介绍总开关或用户个人公开范围。
 
 ## Surface
 

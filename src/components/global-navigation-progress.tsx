@@ -1,10 +1,13 @@
 "use client"
 
 import { usePathname, useSearchParams } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 const START_PROGRESS = 14
 const MAX_PROGRESS_BEFORE_COMPLETE = 90
+const PROGRESS_TICK_MS = 140
+const FINISH_HIDE_DELAY_MS = 220
+const NAVIGATION_FALLBACK_TIMEOUT_MS = 12000
 
 function isTrackableAnchor(target: EventTarget | null) {
   if (!(target instanceof Element)) {
@@ -37,38 +40,72 @@ export function GlobalNavigationProgress() {
   const navigatingRef = useRef(false)
   const progressTimerRef = useRef<number | null>(null)
   const finishTimerRef = useRef<number | null>(null)
+  const fallbackTimerRef = useRef<number | null>(null)
+
+  const clearProgressTimer = useCallback(() => {
+    if (progressTimerRef.current !== null) {
+      window.clearInterval(progressTimerRef.current)
+      progressTimerRef.current = null
+    }
+  }, [])
+
+  const clearFinishTimer = useCallback(() => {
+    if (finishTimerRef.current !== null) {
+      window.clearTimeout(finishTimerRef.current)
+      finishTimerRef.current = null
+    }
+  }, [])
+
+  const clearFallbackTimer = useCallback(() => {
+    if (fallbackTimerRef.current !== null) {
+      window.clearTimeout(fallbackTimerRef.current)
+      fallbackTimerRef.current = null
+    }
+  }, [])
+
+  const completeProgress = useCallback(() => {
+    clearProgressTimer()
+    clearFallbackTimer()
+    clearFinishTimer()
+
+    navigatingRef.current = false
+    setProgress(100)
+    finishTimerRef.current = window.setTimeout(() => {
+      setVisible(false)
+      setProgress(0)
+      finishTimerRef.current = null
+    }, FINISH_HIDE_DELAY_MS)
+  }, [clearFallbackTimer, clearFinishTimer, clearProgressTimer])
+
+  const startProgress = useCallback(() => {
+    clearProgressTimer()
+    clearFallbackTimer()
+    clearFinishTimer()
+
+    navigatingRef.current = true
+    setVisible(true)
+    setProgress((current) => (current > 0 && current < MAX_PROGRESS_BEFORE_COMPLETE ? current : START_PROGRESS))
+
+    progressTimerRef.current = window.setInterval(() => {
+      setProgress((current) => {
+        if (current >= MAX_PROGRESS_BEFORE_COMPLETE) {
+          return current
+        }
+
+        const remaining = MAX_PROGRESS_BEFORE_COMPLETE - current
+        const step = Math.max(1, Math.round(remaining * 0.18))
+        return Math.min(MAX_PROGRESS_BEFORE_COMPLETE, current + step)
+      })
+    }, PROGRESS_TICK_MS)
+
+    fallbackTimerRef.current = window.setTimeout(() => {
+      if (navigatingRef.current) {
+        completeProgress()
+      }
+    }, NAVIGATION_FALLBACK_TIMEOUT_MS)
+  }, [clearFallbackTimer, clearFinishTimer, clearProgressTimer, completeProgress])
 
   useEffect(() => {
-    function clearTimers() {
-      if (progressTimerRef.current !== null) {
-        window.clearInterval(progressTimerRef.current)
-        progressTimerRef.current = null
-      }
-      if (finishTimerRef.current !== null) {
-        window.clearTimeout(finishTimerRef.current)
-        finishTimerRef.current = null
-      }
-    }
-
-    function startProgress() {
-      clearTimers()
-      navigatingRef.current = true
-      setVisible(true)
-      setProgress((current) => (current > 0 ? current : START_PROGRESS))
-
-      progressTimerRef.current = window.setInterval(() => {
-        setProgress((current) => {
-          if (current >= MAX_PROGRESS_BEFORE_COMPLETE) {
-            return current
-          }
-
-          const remaining = MAX_PROGRESS_BEFORE_COMPLETE - current
-          const step = Math.max(1, Math.round(remaining * 0.18))
-          return Math.min(MAX_PROGRESS_BEFORE_COMPLETE, current + step)
-        })
-      }, 140)
-    }
-
     function handleDocumentClick(event: MouseEvent) {
       if (
         event.defaultPrevented
@@ -104,9 +141,11 @@ export function GlobalNavigationProgress() {
 
     return () => {
       document.removeEventListener("click", handleDocumentClick, true)
-      clearTimers()
+      clearProgressTimer()
+      clearFallbackTimer()
+      clearFinishTimer()
     }
-  }, [])
+  }, [clearFallbackTimer, clearFinishTimer, clearProgressTimer, startProgress])
 
   useEffect(() => {
     if (!hasHydratedRef.current) {
@@ -118,33 +157,8 @@ export function GlobalNavigationProgress() {
       return
     }
 
-    navigatingRef.current = false
-    let completeTimer: number | null = null
-
-    if (progressTimerRef.current !== null) {
-      window.clearInterval(progressTimerRef.current)
-      progressTimerRef.current = null
-    }
-
-    completeTimer = window.setTimeout(() => {
-      setProgress(100)
-      finishTimerRef.current = window.setTimeout(() => {
-        setVisible(false)
-        setProgress(0)
-        finishTimerRef.current = null
-      }, 220)
-    }, 0)
-
-    return () => {
-      if (completeTimer !== null) {
-        window.clearTimeout(completeTimer)
-      }
-      if (finishTimerRef.current !== null) {
-        window.clearTimeout(finishTimerRef.current)
-        finishTimerRef.current = null
-      }
-    }
-  }, [pathname, search])
+    completeProgress()
+  }, [completeProgress, pathname, search])
 
   return (
     <div

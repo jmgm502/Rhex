@@ -5,6 +5,8 @@ import { apiError, apiSuccess, createUserRouteHandler, readJsonBody } from "@/li
 import type { AddonUserProfileRecord } from "@/addons-host/types"
 import { executeAddonActionHook, executeAddonWaterfallHook } from "@/addons-host/runtime/hooks"
 import { resolveHookedOptionalStringValue, resolveHookedStringValue } from "@/lib/addon-hook-values"
+import { verifySmsVerificationCodeWithAddonProviders } from "@/lib/addon-sms-verification"
+import { resolveUserProfileIntroductionPermission } from "@/lib/addon-user-profile-introduction-permissions"
 import { enforceSensitiveText } from "@/lib/content-safety"
 import { applyPointDelta, prepareScopedPointDelta } from "@/lib/point-center"
 import { validateProfilePayload } from "@/lib/validators"
@@ -112,8 +114,31 @@ export const POST = createUserRouteHandler<ProfileUpdateResponse>(async ({ reque
   const body = await readJsonBody(request)
   const requestUrl = new URL(request.url)
   const settings = await getSiteSettings()
+  const profileIntroductionEditPermission = settings.userProfileIntroductionEnabled
+    ? await resolveUserProfileIntroductionPermission({
+        action: "edit",
+        owner: currentUser,
+        viewer: currentUser,
+        request,
+      })
+    : { allowed: false, reason: "个人介绍功能已关闭。" }
+  const profileIntroductionEnabled = settings.userProfileIntroductionEnabled && profileIntroductionEditPermission.allowed
+  const introductionSubmitted = Object.prototype.hasOwnProperty.call(body, "introduction")
+  const introductionVisibilitySubmitted = Object.prototype.hasOwnProperty.call(body, "introductionVisibility")
 
-  const validated = validateProfilePayload(body, {
+  if (
+    settings.userProfileIntroductionEnabled
+    && !profileIntroductionEditPermission.allowed
+    && (introductionSubmitted || introductionVisibilitySubmitted)
+  ) {
+    apiError(403, profileIntroductionEditPermission.reason || "当前账号暂不可使用个人介绍。")
+  }
+
+  const profileValidationBody = profileIntroductionEnabled
+    ? body
+    : { ...body, introduction: "" }
+
+  const validated = validateProfilePayload(profileValidationBody, {
     nicknameMinLength: settings.registerNicknameMinLength,
     nicknameMaxLength: settings.registerNicknameMaxLength,
   })
@@ -155,7 +180,7 @@ export const POST = createUserRouteHandler<ProfileUpdateResponse>(async ({ reque
   const nextPhone = phone || null
   const currentProfileSettings = resolveUserProfileSettings(dbUser.signature)
   const activityVisibilityInput = typeof body.activityVisibility === "string" ? body.activityVisibility.trim().toUpperCase() : null
-  const introductionVisibilityInput = typeof body.introductionVisibility === "string" ? body.introductionVisibility.trim().toUpperCase() : null
+  const introductionVisibilityInput = profileIntroductionEnabled && typeof body.introductionVisibility === "string" ? body.introductionVisibility.trim().toUpperCase() : null
 
   if (activityVisibilityInput && !isUserProfileVisibility(activityVisibilityInput)) {
     apiError(400, "活动轨迹可见范围参数不正确")
@@ -168,8 +193,10 @@ export const POST = createUserRouteHandler<ProfileUpdateResponse>(async ({ reque
   const activityVisibility = (activityVisibilityInput && isUserProfileVisibility(activityVisibilityInput) ? activityVisibilityInput : null)
     ?? (typeof body.activityVisibilityPublic === "boolean" ? mapLegacyVisibilityBoolean(body.activityVisibilityPublic) : null)
     ?? currentProfileSettings.activityVisibility
-  const introductionVisibility = (introductionVisibilityInput && isUserProfileVisibility(introductionVisibilityInput) ? introductionVisibilityInput : null)
-    ?? currentProfileSettings.introductionVisibility
+  const introductionVisibility = profileIntroductionEnabled
+    ? (introductionVisibilityInput && isUserProfileVisibility(introductionVisibilityInput) ? introductionVisibilityInput : null)
+      ?? currentProfileSettings.introductionVisibility
+    : currentProfileSettings.introductionVisibility
   const currentProfile = mapAddonUserProfileRecord({
     id: dbUser.id,
     username: dbUser.username,
@@ -209,25 +236,42 @@ export const POST = createUserRouteHandler<ProfileUpdateResponse>(async ({ reque
     searchParams: requestUrl.searchParams,
     payload: profileHookPayload,
   })
-  const introductionHookResult = await executeAddonWaterfallHook("user.profile.introduction.value", validated.data.introduction, {
-    request,
-    pathname: requestUrl.pathname,
-    searchParams: requestUrl.searchParams,
-    payload: profileHookPayload,
-  })
+  let hookedIntroduction = currentProfileSettings.introduction
+  let introductionHookAdjusted = false
+
+  if (profileIntroductionEnabled) {
+    const introductionHookResult = await executeAddonWaterfallHook("user.profile.introduction.value", validated.data.introduction, {
+      request,
+      pathname: requestUrl.pathname,
+      searchParams: requestUrl.searchParams,
+      payload: profileHookPayload,
+    })
+    const resolvedIntroduction = resolveHookedOptionalStringValue(validated.data.introduction, introductionHookResult.value)
+    hookedIntroduction = resolvedIntroduction.value
+    introductionHookAdjusted = resolvedIntroduction.changed
+  }
+
   const { value: hookedNickname, changed: nicknameHookAdjusted } = resolveHookedStringValue(validated.data.nickname, nicknameHookResult.value)
   const { value: hookedBio, changed: bioHookAdjusted } = resolveHookedOptionalStringValue(validated.data.bio, bioHookResult.value)
-  const { value: hookedIntroduction, changed: introductionHookAdjusted } = resolveHookedOptionalStringValue(validated.data.introduction, introductionHookResult.value)
   const nicknameSafety = await enforceSensitiveText({ scene: "profile.nickname", text: hookedNickname })
   const bioSafety = await enforceSensitiveText({ scene: "profile.bio", text: hookedBio })
-  const introductionSafety = await enforceSensitiveText({ scene: "profile.introduction", text: hookedIntroduction })
+  let nextIntroduction = currentProfileSettings.introduction
+  let introductionSafetyWasReplaced = false
+
+  if (profileIntroductionEnabled) {
+    const introductionSafety = await enforceSensitiveText({ scene: "profile.introduction", text: hookedIntroduction })
+    nextIntroduction = introductionSafety.sanitizedText
+    introductionSafetyWasReplaced = introductionSafety.wasReplaced
+  }
+
   const nextNickname = nicknameSafety.sanitizedText
   const nextBio = bioSafety.sanitizedText
-  const nextIntroduction = introductionSafety.sanitizedText
   const nextSignature = mergeUserProfileSettings(dbUser.signature, {
     activityVisibility,
-    introductionVisibility,
-    introduction: nextIntroduction,
+    ...(profileIntroductionEnabled ? {
+      introductionVisibility,
+      introduction: nextIntroduction,
+    } : {}),
   })
   const emailChanged = (dbUser.email ?? null) !== nextEmail
   const phoneChanged = (dbUser.phone ?? null) !== nextPhone
@@ -245,7 +289,7 @@ export const POST = createUserRouteHandler<ProfileUpdateResponse>(async ({ reque
   }
 
   const bioChanged = currentBio !== nextBio
-  const introductionChanged = currentIntroduction !== nextIntroduction
+  const introductionChanged = profileIntroductionEnabled && currentIntroduction !== nextIntroduction
   const avatarChanged = currentAvatarPath !== avatarPath
   const contentAdjusted = Boolean(
     nicknameHookAdjusted
@@ -253,7 +297,7 @@ export const POST = createUserRouteHandler<ProfileUpdateResponse>(async ({ reque
     || introductionHookAdjusted
     || nicknameSafety.wasReplaced
     || bioSafety.wasReplaced
-    || introductionSafety.wasReplaced
+    || introductionSafetyWasReplaced
   )
   const avatarRequiresPointCost = avatarChanged && currentAvatarPath.length > 0
   const nicknameChangePointCost = Math.max(0, resolveVipTierPrice(currentUser, {
@@ -323,10 +367,12 @@ export const POST = createUserRouteHandler<ProfileUpdateResponse>(async ({ reque
   }
 
   if (!dbUser.phoneVerifiedAt && nextPhone && phoneCode) {
-    await verifyCode({
-      channel: VerificationChannel.PHONE,
-      target: nextPhone,
+    await verifySmsVerificationCodeWithAddonProviders({
+      request,
+      phone: nextPhone,
       code: phoneCode,
+      purpose: "register",
+      userId: currentUser.id,
     })
     phoneVerifiedAt = new Date()
   }

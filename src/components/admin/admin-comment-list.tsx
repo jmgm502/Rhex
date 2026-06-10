@@ -9,6 +9,7 @@ import {
   AdminFilterSearchField,
   AdminFilterSelectField,
 } from "@/components/admin/admin-filter-card"
+import { AdminPaginationBar } from "@/components/admin/admin-pagination-bar"
 import { AdminSummaryStrip } from "@/components/admin/admin-summary-strip"
 import {
   ArrowRight,
@@ -405,6 +406,14 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
             </div>
           </div>
         ) : null}
+        {data.comments.length > 0 ? (
+          <AdminPaginationBar
+            pagination={data.pagination}
+            buildPageHref={buildPageHref}
+            itemLabel="条评论"
+            className="border-b border-border px-4 py-3"
+          />
+        ) : null}
         <CardContent className="px-0 py-0">
           {data.comments.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
@@ -475,29 +484,13 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
             </Table>
           )}
         </CardContent>
-        <CardFooter className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span>第 {data.pagination.page} / {data.pagination.totalPages} 页</span>
-            <span>每页 {data.pagination.pageSize} 条</span>
-            <span>共 {formatNumber(data.pagination.total)} 条评论</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <PaginationLink
-              href={data.pagination.hasPrevPage ? buildPageHref(data.pagination.page - 1) : "#"}
-              disabled={!data.pagination.hasPrevPage}
-            >
-              上一页
-            </PaginationLink>
-            <Badge variant="secondary" className="h-8 rounded-full px-3 text-sm">
-              {data.pagination.page}
-            </Badge>
-            <PaginationLink
-              href={data.pagination.hasNextPage ? buildPageHref(data.pagination.page + 1) : "#"}
-              disabled={!data.pagination.hasNextPage}
-            >
-              下一页
-            </PaginationLink>
-          </div>
+        <CardFooter>
+          <AdminPaginationBar
+            pagination={data.pagination}
+            buildPageHref={buildPageHref}
+            itemLabel="条评论"
+            className="w-full"
+          />
         </CardFooter>
       </Card>
     </div>
@@ -787,30 +780,6 @@ function CommentActionsCell({ comment }: { comment: AdminCommentListItem }) {
         </>
       )}
     </div>
-  )
-}
-
-function PaginationLink({
-  href,
-  disabled,
-  children,
-}: {
-  href: string
-  disabled: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <Link
-      href={href}
-      aria-disabled={disabled}
-      className={cn(
-        buttonVariants({ variant: "outline", size: "default" }),
-        "rounded-full px-3 text-xs",
-        disabled ? "pointer-events-none opacity-40" : ""
-      )}
-    >
-      {children}
-    </Link>
   )
 }
 

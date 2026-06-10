@@ -124,7 +124,7 @@ export default async function BoardPage(props: PageProps<"/boards/[slug]">) {
     requirePostReview: board.requirePostReview ?? false,
     requireCommentReview: board.requireCommentReview ?? false,
     showInHomeFeed: true,
-  }, "view")
+  }, "view", settings.pointName)
 
   const rawPage = readSearchParam(searchParams?.page)
   const rawSort = readSearchParam(searchParams?.sort)

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/rbutton"
 import { Tooltip } from "@/components/ui/tooltip"
+import { formatCompactPointValue } from "@/lib/formatters"
 
 
 interface BadgeCenterItem {
@@ -198,8 +199,8 @@ export function BadgeCenter({ badges, isLoggedIn, pointName = "积分" }: BadgeC
               ? badge.eligibility.progressText
               : badge.eligibility.purchaseRequired
                 ? badge.eligibility.canAffordPurchase
-                  ? `支付 ${badge.eligibility.pointsCost} ${pointName}领取`
-                  : `需要 ${badge.eligibility.pointsCost} ${pointName}`
+                  ? `支付 ${formatCompactPointValue(badge.eligibility.pointsCost)} ${pointName}领取`
+                  : `需要 ${formatCompactPointValue(badge.eligibility.pointsCost)} ${pointName}`
                 : "立即领取"
           const claimButtonDisabled = !isLoggedIn || badge.eligibility.alreadyGranted || !badge.eligibility.eligible || isPending || (badge.eligibility.purchaseRequired && !badge.eligibility.canAffordPurchase)
           const displayButtonLabel = badge.display.isDisplayed ? "取消佩戴" : "佩戴" 
@@ -259,7 +260,7 @@ export function BadgeCenter({ badges, isLoggedIn, pointName = "积分" }: BadgeC
           <AlertDialogHeader>
             <AlertDialogTitle>确认领取付费勋章</AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
-              确认支付 {claimConfirmationBadge?.eligibility.pointsCost ?? 0} {pointName} 领取「{claimConfirmationBadge?.name ?? "勋章"}」吗？确认后会立即扣除余额并发放勋章。
+              确认支付 {formatCompactPointValue(claimConfirmationBadge?.eligibility.pointsCost ?? 0)} {pointName} 领取「{claimConfirmationBadge?.name ?? "勋章"}」吗？确认后会立即扣除余额并发放勋章。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

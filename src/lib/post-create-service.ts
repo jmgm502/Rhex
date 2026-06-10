@@ -261,7 +261,7 @@ export async function createPostFlow(body: unknown, options: CreatePostFlowOptio
     apiError(403, "当前节点暂不允许发帖")
   }
 
-  const permission = checkBoardPermission(author, boardContext.settings, "post")
+  const permission = checkBoardPermission(author, boardContext.settings, "post", settings.pointName)
   if (!permission.allowed) {
     apiError(403, permission.message || "当前没有发帖权限")
   }

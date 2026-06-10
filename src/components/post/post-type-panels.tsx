@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Modal } from "@/components/ui/modal"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { formatCompactNumber, formatDateTime, formatNumber, formatRelativeTime } from "@/lib/formatters"
+import { formatCompactNumber, formatCompactPointValue, formatDateTime, formatNumber, formatRelativeTime } from "@/lib/formatters"
 import { addPostBountyResolvedListener } from "@/lib/post-discussion-events"
 import { cn } from "@/lib/utils"
 
@@ -115,7 +115,7 @@ export function BountyPanel({ postId, points, pointName = "积分", isResolved, 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">悬赏帖</p>
-          <p className="mt-1 text-sm leading-6 text-amber-900/90 dark:text-amber-100/85">当前悬赏 {formatNumber(points)} {pointName}，发帖人可在回复中选择一个答案进行采纳。</p>
+          <p className="mt-1 text-sm leading-6 text-amber-900/90 dark:text-amber-100/85">当前悬赏 {formatCompactPointValue(points)} {pointName}，发帖人可在回复中选择一个答案进行采纳。</p>
         </div>
 
         <span className={resolved ? "w-fit rounded-full bg-emerald-100 px-3 py-1 text-xs text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : "w-fit rounded-full bg-amber-100 px-3 py-1 text-xs text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"}>

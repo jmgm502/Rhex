@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
-import { formatNumber } from "@/lib/formatters"
+import { formatCompactPointValue } from "@/lib/formatters"
 
 
 interface PurchaseUnlockButtonProps {
@@ -46,7 +46,7 @@ export function PurchaseUnlockButton({ postId, blockId, price, pointName }: Purc
   return (
     <div className="space-y-3">
       <Button type="button" onClick={handlePurchase} disabled={loading}>
-        {loading ? "购买中..." : `使用 ${formatNumber(price)} ${pointName} 解锁`}
+        {loading ? "购买中..." : `使用 ${formatCompactPointValue(price)} ${pointName} 解锁`}
       </Button>
     </div>
 

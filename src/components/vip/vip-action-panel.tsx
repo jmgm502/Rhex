@@ -7,7 +7,7 @@ import { showConfirm } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
 
-import { formatDateTime, formatNumber } from "@/lib/formatters"
+import { formatCompactPointValue, formatDateTime } from "@/lib/formatters"
 import { isVipActive } from "@/lib/vip-status"
 
 interface VipActionPanelProps {
@@ -55,7 +55,7 @@ export function VipActionPanel({ vipMonthlyPrice, vipQuarterlyPrice, vipYearlyPr
 
     const confirmed = await showConfirm({
       title: vipActive ? "确认续费 VIP" : "确认开通 VIP",
-      description: `确认${vipActive ? "续费" : "开通"} ${plan.title} 吗？\n生效时长：${plan.duration}\n需支付：${formatNumber(plan.price)} ${pointName}\n${vipActive ? "确认后会在当前到期时间基础上顺延。" : "确认后将立即生效。"}`,
+      description: `确认${vipActive ? "续费" : "开通"} ${plan.title} 吗？\n生效时长：${plan.duration}\n需支付：${formatCompactPointValue(plan.price)} ${pointName}\n${vipActive ? "确认后会在当前到期时间基础上顺延。" : "确认后将立即生效。"}`,
       confirmText: vipActive ? "确认续费" : "确认开通",
     })
 
@@ -103,12 +103,12 @@ export function VipActionPanel({ vipMonthlyPrice, vipQuarterlyPrice, vipYearlyPr
       <div className="rounded-xl border border-border p-5">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <h3 className="text-sm font-semibold">购买 / 续费 VIP（{pointName}支付）</h3>
-          <p className="text-sm text-muted-foreground">当前{pointName}：{formatNumber(userPoints)}{vipActive ? "，当前已是 VIP，可继续续期。" : "，可直接购买开通 VIP。"}</p>
+          <p className="text-sm text-muted-foreground">当前{pointName}：{formatCompactPointValue(userPoints)}{vipActive ? "，当前已是 VIP，可继续续期。" : "，可直接购买开通 VIP。"}</p>
         </div>
         <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-          <div className="flex items-center justify-between rounded-[18px] border border-border px-4 py-3 dark:bg-secondary/20"><span>月卡 30 天 = VIP1</span><Button onClick={() => runAction("purchase.month")} disabled={loading !== "" || userPoints < vipMonthlyPrice}>{loading === "purchase.month" ? "处理中..." : `${formatNumber(vipMonthlyPrice)} ${pointName}`}</Button></div>
-          <div className="flex items-center justify-between rounded-[18px] border border-border px-4 py-3 dark:bg-secondary/20"><span>季卡 90 天 = VIP2</span><Button onClick={() => runAction("purchase.quarter")} disabled={loading !== "" || userPoints < vipQuarterlyPrice}>{loading === "purchase.quarter" ? "处理中..." : `${formatNumber(vipQuarterlyPrice)} ${pointName}`}</Button></div>
-          <div className="flex items-center justify-between rounded-[18px] border border-border px-4 py-3 dark:bg-secondary/20"><span>年卡 365 天 = VIP3</span><Button onClick={() => runAction("purchase.year")} disabled={loading !== "" || userPoints < vipYearlyPrice}>{loading === "purchase.year" ? "处理中..." : `${formatNumber(vipYearlyPrice)} ${pointName}`}</Button></div>
+          <div className="flex items-center justify-between rounded-[18px] border border-border px-4 py-3 dark:bg-secondary/20"><span>月卡 30 天 = VIP1</span><Button onClick={() => runAction("purchase.month")} disabled={loading !== "" || userPoints < vipMonthlyPrice}>{loading === "purchase.month" ? "处理中..." : `${formatCompactPointValue(vipMonthlyPrice)} ${pointName}`}</Button></div>
+          <div className="flex items-center justify-between rounded-[18px] border border-border px-4 py-3 dark:bg-secondary/20"><span>季卡 90 天 = VIP2</span><Button onClick={() => runAction("purchase.quarter")} disabled={loading !== "" || userPoints < vipQuarterlyPrice}>{loading === "purchase.quarter" ? "处理中..." : `${formatCompactPointValue(vipQuarterlyPrice)} ${pointName}`}</Button></div>
+          <div className="flex items-center justify-between rounded-[18px] border border-border px-4 py-3 dark:bg-secondary/20"><span>年卡 365 天 = VIP3</span><Button onClick={() => runAction("purchase.year")} disabled={loading !== "" || userPoints < vipYearlyPrice}>{loading === "purchase.year" ? "处理中..." : `${formatCompactPointValue(vipYearlyPrice)} ${pointName}`}</Button></div>
 
 
         </div>

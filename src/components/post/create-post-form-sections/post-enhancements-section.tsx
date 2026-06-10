@@ -19,6 +19,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
+import { formatCompactPointValue } from "@/lib/formatters"
 import { getPostRewardPoolModeLabel } from "@/lib/post-reward-pool-config"
 
 function DesktopActionCard({
@@ -157,11 +158,11 @@ function RewardPoolSummary({
         <>
           <p>
             当前已配置为聚宝盆：发帖时投入{" "}
-            {jackpotInitialPoints || postJackpotMinInitialPoints} {pointName}{" "}
+            {formatCompactPointValue(Number(jackpotInitialPoints) || postJackpotMinInitialPoints)} {pointName}{" "}
             作为初始积分。
           </p>
           <p>
-            首个有效回复会追加 {postJackpotReplyIncrementPoints} {pointName}
+            首个有效回复会追加 {formatCompactPointValue(postJackpotReplyIncrementPoints)} {pointName}
             并按 {postJackpotHitProbability}% 概率抽奖，后续回复改为随机小额追加且中奖概率递减。
           </p>
         </>
@@ -178,7 +179,7 @@ function RewardPoolSummary({
           </p>
           <p>
             {redPacketGrantMode === "FIXED"
-              ? `固定红包总计需要 ${fixedRedPacketTotalPoints ?? 0} ${pointName}。`
+              ? `固定红包总计需要 ${formatCompactPointValue(fixedRedPacketTotalPoints ?? 0)} ${pointName}。`
               : "拼手气红包要求总积分不小于份数。"}
           </p>
         </>
@@ -282,7 +283,7 @@ export function PostEnhancementsSection({
   const rewardPoolDesktopSummary = redPacketEnabled
     ? redPacketMode === "JACKPOT"
       ? `${getPostRewardPoolModeLabel(redPacketMode)} / 初始 ${
-          jackpotInitialPoints || postJackpotMinInitialPoints
+          formatCompactPointValue(Number(jackpotInitialPoints) || postJackpotMinInitialPoints)
         }`
       : `${getPostRewardPoolModeLabel(redPacketMode)} / ${
           redPacketTriggerType === "REPLY"
@@ -308,7 +309,7 @@ export function PostEnhancementsSection({
   const loginSummary = loginUnlockContent.trim() ? "已配置" : "未配置"
   const replySummary = replyUnlockContent.trim() ? "已配置" : "未配置"
   const purchaseSummary = purchaseUnlockContent.trim()
-    ? `￥${purchasePrice || 0} / ${pointName}`
+    ? `${formatCompactPointValue(Number(purchasePrice) || 0)} / ${pointName}`
     : "未配置"
   const viewLevelSummary = Number(minViewVipLevel) > 0
     ? `VIP${Number(minViewVipLevel)}${
@@ -624,7 +625,7 @@ export function PostEnhancementsSection({
               icon={<Info className="h-4 w-4" />}
               title="购买后可看"
               summary={
-                purchaseUnlockContent.trim() ? `￥${purchasePrice || 0} / ${pointName}` : "未配置"
+                purchaseUnlockContent.trim() ? `${formatCompactPointValue(Number(purchasePrice) || 0)} / ${pointName}` : "未配置"
               }
               active={Boolean(purchaseUnlockContent.trim())}
               onClick={actions.onOpenPurchaseModal}
