@@ -80,4 +80,5 @@ export const GET = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "生成水印预览失败",
   logPrefix: "[api/admin/site-settings/watermark-preview] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.siteSettings.manage",
 })

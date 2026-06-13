@@ -26,6 +26,7 @@ export const GET = createAdminRouteHandler(async () => {
   errorMessage: "读取日调用上限配置失败",
   logPrefix: "[api/admin/apps/ai-reply/rate-limit:GET] unexpected error",
   unauthorizedMessage: "无权访问",
+  permission: "admin.apps.manage",
 })
 
 export const POST = createAdminRouteHandler(async ({ request }) => {
@@ -40,6 +41,7 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "保存日调用上限配置失败",
   logPrefix: "[api/admin/apps/ai-reply/rate-limit:POST] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })
 
 export const DELETE = createAdminRouteHandler(async ({ request }) => {
@@ -54,4 +56,5 @@ export const DELETE = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "重置今日计数失败",
   logPrefix: "[api/admin/apps/ai-reply/rate-limit:DELETE] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })

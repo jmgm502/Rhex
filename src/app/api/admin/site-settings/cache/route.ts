@@ -11,4 +11,5 @@ export const POST = createAdminRouteHandler(async () => {
   errorMessage: "清除站点设置缓存失败",
   logPrefix: "[api/admin/site-settings/cache:POST] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.siteSettings.manage",
 })

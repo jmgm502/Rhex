@@ -94,4 +94,5 @@ export const GET = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "读取 AI 审核建议失败",
   logPrefix: "[api/admin/apps/ai-reply/moderation/list:GET] unexpected error",
   unauthorizedMessage: "无权访问",
+  permission: "admin.apps.manage",
 })

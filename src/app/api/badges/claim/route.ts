@@ -1,5 +1,6 @@
 import { apiError, apiSuccess, createUserRouteHandler, readJsonBody } from "@/lib/api-route"
 import { claimBadge } from "@/lib/badges"
+import { revalidateUserBadgeMutation } from "@/lib/badge-cache-revalidation"
 
 export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
   const body = await readJsonBody(request)
@@ -10,6 +11,7 @@ export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
   }
 
   const badge = await claimBadge(currentUser.id, badgeId)
+  revalidateUserBadgeMutation(currentUser.id)
   return apiSuccess(undefined, `已领取勋章：${badge.name}`)
 }, {
   errorMessage: "领取失败",

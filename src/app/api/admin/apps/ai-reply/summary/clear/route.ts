@@ -38,4 +38,5 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "清理 AI 总结缓存失败",
   logPrefix: "[api/admin/apps/ai-reply/summary/clear:POST] unexpected error",
   unauthorizedMessage: "无权访问",
+  permission: "admin.apps.manage",
 })

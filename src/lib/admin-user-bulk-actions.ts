@@ -3,6 +3,9 @@ import { revalidatePath } from "next/cache"
 import { prisma } from "@/db/client"
 import { Prisma, UserRole, UserStatus } from "@/db/types"
 import { apiError } from "@/lib/api-route"
+import { findFounderAdminId } from "@/db/admin-user-action-queries"
+import { getBlockedAdminRoleChangeMessage } from "@/lib/admin-user-permission-policy"
+import { canManageTargetUser } from "@/lib/admin-permission-policy"
 import { parseBrowserLocalDateTime } from "@/lib/browser-local-datetime"
 import { formatBrowserLocalDateTimeInput } from "@/lib/browser-local-datetime"
 import { parseBusinessDateTime } from "@/lib/formatters"
@@ -185,10 +188,19 @@ async function countDeletionBlockers(userId: number) {
 
 async function runRoleBulkAction(actor: AdminActor, users: BulkUserRecord[], role: UserRole, skippedReasons: Map<string, number>) {
   const targetUsers: BulkUserRecord[] = []
+  const actorIsFounder = await findFounderAdminId() === actor.id
 
   for (const user of users) {
-    if (user.role === UserRole.ADMIN && role !== UserRole.ADMIN) {
-      pushSkipped(skippedReasons, user.id === actor.id ? "不能把当前登录管理员移出管理员组" : "不能批量降级管理员账号")
+    const blockedMessage = getBlockedAdminRoleChangeMessage({
+      actorId: actor.id,
+      targetId: user.id,
+      targetRole: user.role,
+      nextRole: role,
+      actorIsFounder,
+    })
+
+    if (blockedMessage) {
+      pushSkipped(skippedReasons, blockedMessage === "不能降级管理员账号" ? "不能批量降级管理员账号" : blockedMessage === "不能提升管理员账号" ? "不能批量提升管理员账号" : blockedMessage)
       continue
     }
 
@@ -226,6 +238,7 @@ async function runRoleBulkAction(actor: AdminActor, users: BulkUserRecord[], rol
             statusReason: null,
           },
         })
+        await tx.adminPermissionGrant.deleteMany({ where: { userId: user.id } })
         continue
       }
 
@@ -233,6 +246,7 @@ async function runRoleBulkAction(actor: AdminActor, users: BulkUserRecord[], rol
         where: { id: user.id },
         data: { role },
       })
+      await tx.adminPermissionGrant.deleteMany({ where: { userId: user.id } })
       await tx.moderatorZoneScope.deleteMany({ where: { moderatorId: user.id } })
       await tx.moderatorBoardScope.deleteMany({ where: { moderatorId: user.id } })
     }
@@ -250,6 +264,7 @@ async function runStatusBulkAction(
   skippedReasons: Map<string, number>,
 ) {
   const targetUsers: BulkUserRecord[] = []
+  const actorIsFounder = await findFounderAdminId() === actor.id
 
   for (const user of users) {
     if (user.id === actor.id && (status === UserStatus.BANNED || status === UserStatus.MUTED || status === UserStatus.INACTIVE)) {
@@ -257,8 +272,13 @@ async function runStatusBulkAction(
       continue
     }
 
-    if (user.role === UserRole.ADMIN && (status === UserStatus.BANNED || status === UserStatus.MUTED)) {
-      pushSkipped(skippedReasons, status === UserStatus.BANNED ? "不能封禁管理员账号" : "不能禁言管理员账号")
+    if (!canManageTargetUser({
+      actor,
+      actorIsFounder,
+      targetId: user.id,
+      targetRole: user.role,
+    })) {
+      pushSkipped(skippedReasons, "无权批量管理管理员账号")
       continue
     }
 
@@ -280,6 +300,7 @@ async function runStatusBulkAction(
 async function runDeleteBulkAction(actor: AdminActor, users: BulkUserRecord[], skippedReasons: Map<string, number>) {
   const affectedUsers: BulkUserRecord[] = []
   let failedCount = 0
+  const actorIsFounder = await findFounderAdminId() === actor.id
 
   for (const user of users) {
     if (user.id === actor.id) {
@@ -287,7 +308,12 @@ async function runDeleteBulkAction(actor: AdminActor, users: BulkUserRecord[], s
       continue
     }
 
-    if (user.role !== UserRole.USER) {
+    if (!canManageTargetUser({
+      actor,
+      actorIsFounder,
+      targetId: user.id,
+      targetRole: user.role,
+    }) || user.role !== UserRole.USER) {
       pushSkipped(skippedReasons, "不能批量删除管理员或版主账号")
       continue
     }

@@ -24,4 +24,5 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "AI 测试失败",
   logPrefix: "[api/admin/apps/ai-reply/test] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })

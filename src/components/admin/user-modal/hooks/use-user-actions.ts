@@ -35,6 +35,8 @@ function createInitialPermissionsState(user: AdminUserListItem): PermissionsForm
     message: "",
     feedback: "",
     scopeFeedback: "",
+    adminPermissionFeedback: "",
+    adminPermissionGrants: [],
     zoneScopes: toEditableScopes(user.moderatedZoneScopes, "zoneId"),
     boardScopes: toEditableScopes(user.moderatedBoardScopes, "boardId"),
   }
@@ -97,6 +99,7 @@ export function useUserActions({
       }))
       setPermissionsState((current) => ({
         ...current,
+        adminPermissionGrants: detail?.adminPermissionGrants ?? [],
         zoneScopes: toEditableScopes(sourceUser.moderatedZoneScopes, "zoneId"),
         boardScopes: toEditableScopes(sourceUser.moderatedBoardScopes, "boardId"),
       }))
@@ -325,6 +328,49 @@ export function useUserActions({
     })
   }
 
+  function toggleAdminPermissionGrant(permissionKey: string, allowed: boolean) {
+    setPermissionsState((current) => {
+      const existing = current.adminPermissionGrants.find((item) => item.permissionKey === permissionKey)
+      if (existing?.allowed === allowed) {
+        return {
+          ...current,
+          adminPermissionGrants: current.adminPermissionGrants.filter((item) => item.permissionKey !== permissionKey),
+        }
+      }
+
+      return {
+        ...current,
+        adminPermissionGrants: [
+          ...current.adminPermissionGrants.filter((item) => item.permissionKey !== permissionKey),
+          { permissionKey, allowed },
+        ],
+      }
+    })
+  }
+
+  function saveAdminPermissions() {
+    setPermissionsState((current) => ({ ...current, adminPermissionFeedback: "" }))
+    startTransition(async () => {
+      const response = await fetch("/api/admin/users/permissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          grants: permissionsState.adminPermissionGrants,
+        }),
+      })
+      const result = await parseResponse<null>(response)
+
+      setPermissionsState((current) => ({
+        ...current,
+        adminPermissionFeedback: result?.message ?? (response.ok ? "管理员权限已保存" : "保存失败"),
+      }))
+      if (response.ok) {
+        refreshData()
+      }
+    })
+  }
+
   function runStatusAction(action: string, confirmText?: string) {
     setAccountState((current) => ({ ...current, statusFeedback: "" }))
     if (confirmText && typeof window !== "undefined" && !window.confirm(confirmText)) {
@@ -531,6 +577,8 @@ export function useUserActions({
       },
       runPermissionAction,
       saveModeratorScopes,
+      saveAdminPermissions,
+      toggleAdminPermissionGrant,
       toggleZoneScope: (id: string) => {
         setPermissionsState((current) => ({
           ...current,

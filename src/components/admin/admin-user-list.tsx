@@ -55,6 +55,8 @@ import { cn } from "@/lib/utils"
 
 interface AdminUserListProps {
   data: AdminUserListResult
+  actorUserId: number
+  actorCanDemoteAdmins: boolean
 }
 
 type AdminUserBulkAction = "setRole" | "activate" | "mute" | "ban" | "delete"
@@ -112,7 +114,7 @@ const bulkActionOptions: Array<{ value: AdminUserBulkAction; label: string; dang
 ]
 const bulkRoleOptions = roleOptions.filter((item) => item.value !== "ALL")
 
-export function AdminUserList({ data }: AdminUserListProps) {
+export function AdminUserList({ data, actorUserId, actorCanDemoteAdmins }: AdminUserListProps) {
   const [filters, setFilters] = useState({
     keyword: data.filters.keyword,
     role: data.filters.role,
@@ -435,12 +437,12 @@ export function AdminUserList({ data }: AdminUserListProps) {
                 </label>
                 <span>已选 {selectedCount} 人</span>
                 {selectedCount > 0 ? (
-                  <Button type="button" variant="ghost" size="sm" className="rounded-full px-3 text-xs" disabled={isBatchPending} onClick={() => setSelectedUserIds([])}>
+                  <Button type="button" variant="ghost" size="sm" className="min-h-9 rounded-full px-3 text-xs" disabled={isBatchPending} onClick={() => setSelectedUserIds([])}>
                     清空选择
                   </Button>
                 ) : null}
               </div>
-              <Button type="button" size="sm" className="rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBulkAction()}>
+              <Button type="button" size="sm" className="min-h-9 w-full rounded-full px-3 text-xs sm:w-auto" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBulkAction()}>
                 {isBatchPending ? <Loader2 data-icon="inline-start" className="animate-spin" /> : selectedActionConfig.value === "delete" ? <Trash2 data-icon="inline-start" /> : <UserCog data-icon="inline-start" />}
                 执行批量操作
               </Button>
@@ -541,74 +543,94 @@ export function AdminUserList({ data }: AdminUserListProps) {
               <OverviewActionLink href="/admin?tab=users" label="重置筛选" />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[52px]">
-                    <Checkbox
-                      checked={allCurrentPageSelected}
-                      indeterminate={someCurrentPageSelected}
-                      onCheckedChange={(checked) => toggleSelectCurrentPage(checked === true)}
-                      aria-label="全选本页用户"
-                    />
-                  </TableHead>
-                  <TableHead>用户</TableHead>
-                  <TableHead className="w-[180px]">联系</TableHead>
-                  <TableHead className="w-[170px]">身份</TableHead>
-                  <TableHead className="w-[180px]">状态 / VIP</TableHead>
-                  <TableHead className="w-[170px]">时间</TableHead>
-                  <TableHead className="w-[110px]">产出</TableHead>
-                  <TableHead className="w-[110px]">互动</TableHead>
-                  <TableHead className="w-[110px]">邀请 / 签到</TableHead>
-                  <TableHead className="w-[180px] text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              <div className="flex flex-col gap-3 p-3 md:hidden">
                 {data.users.map((user) => (
-                  <TableRow key={user.id} data-state={selectedUserIds.includes(user.id) ? "selected" : undefined}>
-                    <TableCell className="align-top">
-                      <Checkbox
-                        checked={selectedUserIds.includes(user.id)}
-                        onCheckedChange={(checked) => toggleSelectUser(user.id, checked === true)}
-                        aria-label={`选择用户 ${user.username}`}
-                      />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <UserProfileCell user={user} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <UserContactCell user={user} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <UserIdentityCell user={user} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <UserStatusCell user={user} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <UserTimeCell user={user} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <UserContentMetricsCell user={user} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <UserSocialMetricsCell user={user} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <UserGrowthMetricsCell user={user} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <div className="flex justify-end">
-                        <AdminUserModal
-                          user={user}
-                          moderatorScopeOptions={data.moderatorScopeOptions}
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <UserMobileCard
+                    key={user.id}
+                    user={user}
+                    selected={selectedUserIds.includes(user.id)}
+                    onSelect={(checked) => toggleSelectUser(user.id, checked)}
+                    moderatorScopeOptions={data.moderatorScopeOptions}
+                    actorUserId={actorUserId}
+                    actorCanDemoteAdmins={actorCanDemoteAdmins}
+                  />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+              <div className="hidden overflow-x-auto md:block">
+                <Table className="min-w-[1320px]">
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="w-[52px]">
+                        <Checkbox
+                          checked={allCurrentPageSelected}
+                          indeterminate={someCurrentPageSelected}
+                          onCheckedChange={(checked) => toggleSelectCurrentPage(checked === true)}
+                          aria-label="全选本页用户"
+                        />
+                      </TableHead>
+                      <TableHead>用户</TableHead>
+                      <TableHead className="w-[180px]">联系</TableHead>
+                      <TableHead className="w-[170px]">身份</TableHead>
+                      <TableHead className="w-[180px]">状态 / VIP</TableHead>
+                      <TableHead className="w-[170px]">时间</TableHead>
+                      <TableHead className="w-[110px]">产出</TableHead>
+                      <TableHead className="w-[110px]">互动</TableHead>
+                      <TableHead className="w-[110px]">邀请 / 签到</TableHead>
+                      <TableHead className="w-[120px] text-right">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.users.map((user) => (
+                      <TableRow key={user.id} data-state={selectedUserIds.includes(user.id) ? "selected" : undefined}>
+                        <TableCell className="align-top">
+                          <Checkbox
+                            checked={selectedUserIds.includes(user.id)}
+                            onCheckedChange={(checked) => toggleSelectUser(user.id, checked === true)}
+                            aria-label={`选择用户 ${user.username}`}
+                          />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <UserProfileCell user={user} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <UserContactCell user={user} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <UserIdentityCell user={user} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <UserStatusCell user={user} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <UserTimeCell user={user} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <UserContentMetricsCell user={user} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <UserSocialMetricsCell user={user} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <UserGrowthMetricsCell user={user} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <div className="flex justify-end">
+                            <AdminUserModal
+                              user={user}
+                              moderatorScopeOptions={data.moderatorScopeOptions}
+                              actorUserId={actorUserId}
+                              actorCanDemoteAdmins={actorCanDemoteAdmins}
+                              triggerClassName="min-h-9 px-3"
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
         <CardFooter>
@@ -649,6 +671,108 @@ function UserProfileCell({ user }: { user: AdminUserListItem }) {
         ) : null}
       </div>
     </div>
+  )
+}
+
+function UserMobileCard({
+  user,
+  selected,
+  onSelect,
+  moderatorScopeOptions,
+  actorUserId,
+  actorCanDemoteAdmins,
+}: {
+  user: AdminUserListItem
+  selected: boolean
+  onSelect: (checked: boolean) => void
+  moderatorScopeOptions: AdminUserListResult["moderatorScopeOptions"]
+  actorUserId: number
+  actorCanDemoteAdmins: boolean
+}) {
+  const vipActive = isVipActive({ vipLevel: user.vipLevel, vipExpiresAt: user.vipExpiresAt })
+  const moderatorScopeSummary =
+    user.role === "MODERATOR"
+      ? `${user.moderatedZoneScopes.length} 分区 / ${user.moderatedBoardScopes.length} 节点`
+      : null
+
+  return (
+    <article
+      data-state={selected ? "selected" : undefined}
+      className="rounded-[18px] border border-border/80 bg-card p-3 shadow-xs transition-colors active:bg-muted/50 data-[state=selected]:border-primary/45 data-[state=selected]:bg-primary/5"
+    >
+      <div className="flex items-start gap-3">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={(checked) => onSelect(checked === true)}
+          aria-label={`选择用户 ${user.username}`}
+          className="mt-1 shrink-0"
+        />
+        <UserAvatar name={user.displayName || user.username} avatarPath={user.avatarPath} size="sm" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="line-clamp-1 text-[15px] font-semibold leading-6 text-foreground">
+                {user.displayName}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">@{user.username} · UID {user.id}</p>
+            </div>
+            <AdminUserModal
+              user={user}
+              moderatorScopeOptions={moderatorScopeOptions}
+              actorUserId={actorUserId}
+              actorCanDemoteAdmins={actorCanDemoteAdmins}
+              triggerClassName="min-h-9 px-3"
+            />
+          </div>
+        </div>
+      </div>
+
+      {user.bio ? (
+        <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere]">
+          {user.bio}
+        </p>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <Badge className={getStatusBadgeClassName(user.status)}>
+          {getStatusLabel(user.status)}
+        </Badge>
+        <Badge className={getRoleBadgeClassName(user.role)}>
+          {getRoleLabel(user.role)}
+        </Badge>
+        <Badge className={vipActive ? getVipBadgeClassName() : "border-border bg-background text-muted-foreground"}>
+          {vipActive ? `VIP${user.vipLevel}` : "非 VIP"}
+        </Badge>
+        <Badge variant="outline">Lv.{user.level}</Badge>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+        <div className="rounded-[14px] bg-muted/45 px-3 py-2">
+          <p className="font-medium text-foreground">注册 / 登录</p>
+          <p className="mt-1">注册 {formatDateTime(user.createdAt)}</p>
+          <p className="mt-1">{user.lastLoginAt ? `登录 ${formatDateTime(user.lastLoginAt)}` : "从未登录"}</p>
+        </div>
+        <div className="rounded-[14px] bg-muted/45 px-3 py-2">
+          <p className="font-medium text-foreground">联系 / 来源</p>
+          <p className="mt-1 line-clamp-1">{user.email ?? user.phone ?? "未绑定联系方式"}</p>
+          <p className="mt-1 line-clamp-1">{moderatorScopeSummary ?? `邀请人 ${user.inviterName ?? "-"}`}</p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+        <span className="rounded-full bg-muted/60 px-2.5 py-1">帖子 {formatNumber(user.postCount)}</span>
+        <span className="rounded-full bg-muted/60 px-2.5 py-1">评论 {formatNumber(user.commentCount)}</span>
+        <span className="rounded-full bg-muted/60 px-2.5 py-1">获赞 {formatNumber(user.likeReceivedCount)}</span>
+        <span className="rounded-full bg-muted/60 px-2.5 py-1">积分 {formatNumber(user.points)}</span>
+      </div>
+
+      {user.status === "MUTED" || user.status === "BANNED" ? (
+        <p className="mt-3 rounded-[14px] border border-dashed border-border/80 bg-background/70 px-3 py-2 text-xs leading-5 text-muted-foreground">
+          {user.statusExpiresAt ? `自动解除：${formatDateTime(user.statusExpiresAt)}` : "永久限制"}
+          {user.statusReason ? ` · ${user.statusReason}` : ""}
+        </p>
+      ) : null}
+    </article>
   )
 }
 

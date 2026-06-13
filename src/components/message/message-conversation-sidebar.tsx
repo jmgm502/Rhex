@@ -52,7 +52,6 @@ export function MessageConversationSidebar({
       <div className="border-b border-border px-4 py-3.5 max-sm:px-4 max-sm:pt-4 max-sm:pb-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Message Center</p>
             <h2 className="mt-2 text-[22px] font-semibold">私信</h2>
           </div>
           <span className="rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">{conversations.length} 个会话</span>

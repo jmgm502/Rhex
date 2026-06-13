@@ -156,6 +156,11 @@ export interface AdminUserGrantedBadgeItem {
   grantedAt: string
 }
 
+export interface AdminUserPermissionGrantItem {
+  permissionKey: string
+  allowed: boolean
+}
+
 export interface AdminUserDetailResult {
   id: number
   username: string
@@ -188,6 +193,10 @@ export interface AdminUserDetailResult {
   moderatedBoardScopes: AdminUserModeratedBoardScope[]
   availableBadges: AdminUserAssignableBadgeItem[]
   grantedBadges: AdminUserGrantedBadgeItem[]
+  adminPermissionGrants: AdminUserPermissionGrantItem[]
+  effectiveAdminPermissions: string[]
+  editableAdminPermissions: string[]
+  canEditAdminPermissions: boolean
   logSections: AdminUserDetailLogSection[]
 }
 

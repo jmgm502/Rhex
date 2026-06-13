@@ -7,7 +7,7 @@ import { AdminShell } from "@/components/admin/admin-shell"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { HOST_APPS } from "@/lib/apps"
-import { requireAdminUser } from "@/lib/admin"
+import { getAdminActorPermissionState } from "@/lib/admin-page-auth"
 import { getSiteSettings } from "@/lib/site-settings"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,15 +19,21 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AdminAppsPage() {
-  const admin = await requireAdminUser()
-  if (!admin) {
+  const auth = await getAdminActorPermissionState("admin.apps.manage")
+  if (!auth.actor) {
     redirect("/login?redirect=/admin/apps")
   }
+  if (!auth.authorized) {
+    redirect("/admin")
+  }
+  const { actor: admin, tier: adminTier } = auth
 
   return (
     <AdminShell
       currentKey="apps"
       adminName={admin.nickname ?? admin.username}
+      adminRole={admin.role}
+      adminTier={adminTier}
       headerDescription="统一管理站点内置应用和每个应用的独立后台入口。"
       headerSearch={<AdminModuleSearch className="w-full" />}
     >

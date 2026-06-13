@@ -66,7 +66,7 @@ export function MessageThreadPanel({
   if (!conversation || !recipient) {
     if (loadingConversation) {
       return (
-        <div className="flex min-h-[calc(100vh-164px)] items-center justify-center rounded-xl bg-card px-6 text-center max-sm:min-h-[calc(100dvh-56px)] max-sm:rounded-none">
+        <div className="flex min-h-[calc(100vh-164px)] items-center justify-center rounded-xl border border-border bg-card px-6 text-center shadow-soft max-sm:min-h-[calc(100dvh-56px)] max-sm:rounded-none max-sm:border-x-0 max-sm:border-b-0 max-sm:shadow-none">
           <div>
             {onBack ? (
               <button
@@ -89,7 +89,7 @@ export function MessageThreadPanel({
 
     if (conversationError) {
       return (
-        <div className="flex min-h-[calc(100vh-164px)] items-center justify-center rounded-xl bg-card px-6 text-center max-sm:min-h-[calc(100dvh-56px)] max-sm:rounded-none">
+        <div className="flex min-h-[calc(100vh-164px)] items-center justify-center rounded-xl border border-border bg-card px-6 text-center shadow-soft max-sm:min-h-[calc(100dvh-56px)] max-sm:rounded-none max-sm:border-x-0 max-sm:border-b-0 max-sm:shadow-none">
           <div>
             {onBack ? (
               <button
@@ -111,7 +111,7 @@ export function MessageThreadPanel({
     }
 
     return (
-      <div className="flex min-h-[calc(100vh-164px)] items-center justify-center rounded-xl bg-card px-6 text-center max-sm:min-h-[calc(100dvh-56px)] max-sm:rounded-none">
+      <div className="flex min-h-[calc(100vh-164px)] items-center justify-center rounded-xl border border-border bg-card px-6 text-center shadow-soft max-sm:min-h-[calc(100dvh-56px)] max-sm:rounded-none max-sm:border-x-0 max-sm:border-b-0 max-sm:shadow-none">
         <div>
           <MessageSquareMore className="mx-auto h-10 w-10 text-muted-foreground" />
           <p className="mt-4 text-sm uppercase tracking-[0.28em] text-muted-foreground">Chat Thread</p>
@@ -440,7 +440,7 @@ function MessageThreadPanelContent({
   }
 
   return (
-    <div className="flex max-h-[calc(100vh-164px)] min-h-[calc(100vh-164px)] flex-col overflow-hidden rounded-xl bg-card max-sm:max-h-[calc(100dvh-56px)] max-sm:min-h-[calc(100dvh-56px)] max-sm:rounded-none">
+    <div className="flex max-h-[calc(100vh-164px)] min-h-[calc(100vh-164px)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-soft max-sm:max-h-[calc(100dvh-56px)] max-sm:min-h-[calc(100dvh-56px)] max-sm:rounded-none max-sm:border-x-0 max-sm:border-b-0 max-sm:shadow-none">
       <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-3 sm:px-5 sm:py-3.5">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           {onBack ? (

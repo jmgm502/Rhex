@@ -10,6 +10,7 @@ export interface AdminCommentListItem {
   authorId: number
   authorName: string
   authorUsername: string
+  authorAvatarPath: string | null
   parentId: string | null
   likeCount: number
   isGodComment: boolean

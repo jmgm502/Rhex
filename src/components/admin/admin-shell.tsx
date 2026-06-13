@@ -19,6 +19,7 @@ import {
   getAdminNavigationItem,
   type AdminNavKey,
 } from "@/lib/admin-navigation"
+import { getAdminTierLabel, type AdminManagementTier, type AdminPermissionKey } from "@/lib/admin-permission-policy"
 import { getAvatarFallback } from "@/lib/avatar"
 
 const adminThemeStyle: CSSProperties = {
@@ -29,6 +30,8 @@ interface AdminShellProps {
   currentKey: AdminNavKey
   adminName: string
   adminRole?: "ADMIN" | "MODERATOR"
+  adminTier?: AdminManagementTier
+  effectivePermissions?: AdminPermissionKey[]
   headerDescription?: string
   headerSearch?: ReactNode
   breadcrumbs?: Array<{
@@ -46,6 +49,8 @@ export async function AdminShell({
   currentKey,
   adminName,
   adminRole = "ADMIN",
+  adminTier,
+  effectivePermissions,
   headerDescription,
   headerSearch,
   breadcrumbs,
@@ -53,7 +58,9 @@ export async function AdminShell({
 }: AdminShellProps) {
   const currentItem = getAdminNavigationItem(currentKey)
   const resolvedDescription = headerDescription ?? currentItem.description
-  const navigationGroups = getAdminNavigationGroups(adminRole)
+  const effectivePermissionSet = effectivePermissions ? new Set(effectivePermissions) : undefined
+  const navigationGroups = getAdminNavigationGroups(adminRole, adminNavigation, adminTier, effectivePermissionSet)
+  const roleLabel = adminTier ? getAdminTierLabel(adminTier) : adminRole === "ADMIN" ? "站点管理员" : "版主"
   const resolvedBreadcrumbs =
     breadcrumbs ??
     [
@@ -67,9 +74,10 @@ export async function AdminShell({
       payload: {
         scope: "admin",
         currentKey,
-        adminRole,
-      },
-    },
+                  adminRole,
+                  adminTier,
+                },
+              },
   )
   const finalBreadcrumbs =
     Array.isArray(hookedBreadcrumbs) && hookedBreadcrumbs.length > 0
@@ -209,7 +217,7 @@ export async function AdminShell({
                   variant={adminRole === "ADMIN" ? "default" : "secondary"}
                   className="hidden sm:inline-flex"
                 >
-                  {adminRole === "ADMIN" ? "站点管理员" : "版主"}
+                  {roleLabel}
                 </Badge>
                 <div className="hidden items-center gap-2 rounded-lg border border-border/70 bg-card/80 px-2.5 py-1.5 sm:flex">
                   <Avatar className="size-7 rounded-lg">

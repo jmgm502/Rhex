@@ -32,11 +32,12 @@ import {
   buildManagedZoneWhereInput,
   requireAdminActor,
   requireSiteAdminActor,
-  isSiteAdmin,
   type AdminActor,
 } from "@/lib/moderator-permissions"
 import { apiError } from "./api-route"
 import { getAdminBoardApplicationPageData } from "@/lib/board-applications"
+import { canAdminWithPermissionOverrides, getAdminPermissionGrants } from "@/lib/admin-permission-overrides"
+import { isFounderAdmin } from "@/lib/admin-founder"
 
 export async function requireAdminUser() {
   const currentUser = await getCurrentUser()
@@ -72,20 +73,23 @@ export async function getAdminStructureData(): Promise<AdminStructureData> {
     apiError(403, "无权限访问后台版块数据")
   }
 
+  const actorIsFounder = currentUser.role === "ADMIN" ? await isFounderAdmin(currentUser.id) : false
+  const adminPermissionGrants = actorIsFounder ? [] : await getAdminPermissionGrants(currentUser.id)
+  const canReviewBoardApplications = await canAdminWithPermissionOverrides(currentUser, "admin.operations.manage", { isFounder: actorIsFounder })
   const [data, boardApplications] = await Promise.all([
     getAdminStructureRawData({
       zoneWhere: buildManagedZoneWhereInput(currentUser),
       boardWhere: buildManagedBoardWhereInput(currentUser),
     }),
-    isSiteAdmin(currentUser)
+    canReviewBoardApplications
       ? getAdminBoardApplicationPageData()
       : Promise.resolve({ pendingCount: 0, items: [] }),
   ])
 
   return {
-    ...mapAdminStructureData(data, currentUser),
+    ...mapAdminStructureData(data, currentUser, { isFounder: actorIsFounder, grants: adminPermissionGrants }),
     boardApplications: boardApplications.items,
-    canReviewBoardApplications: isSiteAdmin(currentUser),
+    canReviewBoardApplications,
   }
 }
 

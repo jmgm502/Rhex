@@ -33,6 +33,7 @@ export const GET = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "支付网关后台数据读取失败",
   logPrefix: "[api/admin/apps/payment-gateway:GET] unexpected error",
   unauthorizedMessage: "无权访问",
+  permission: "admin.apps.manage",
 })
 
 export const POST = createAdminRouteHandler(async ({ request }) => {
@@ -48,6 +49,7 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "支付网关配置保存失败",
   logPrefix: "[api/admin/apps/payment-gateway:POST] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })
 
 export const DELETE = createAdminRouteHandler(async ({ request }) => {
@@ -64,4 +66,5 @@ export const DELETE = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "清除支付日志失败",
   logPrefix: "[api/admin/apps/payment-gateway:DELETE] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })

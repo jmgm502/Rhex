@@ -13,5 +13,6 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "配置保存失败",
   logPrefix: "[api/admin/apps/gobang] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })
 

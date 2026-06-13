@@ -15,6 +15,7 @@ export const POST = createAdminRouteHandler(async ({ request, adminUser }) => {
   errorMessage: "保存版主设置失败",
   logPrefix: "[api/admin/structure/moderators:POST] unexpected error",
   unauthorizedMessage: "无权配置版主",
+  allowModerator: true,
 })
 
 export const DELETE = createAdminRouteHandler(async ({ request, adminUser }) => {
@@ -30,4 +31,5 @@ export const DELETE = createAdminRouteHandler(async ({ request, adminUser }) => 
   errorMessage: "移除版主失败",
   logPrefix: "[api/admin/structure/moderators:DELETE] unexpected error",
   unauthorizedMessage: "无权配置版主",
+  allowModerator: true,
 })

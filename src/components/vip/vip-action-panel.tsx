@@ -1,14 +1,16 @@
 "use client"
 
+import { CheckCircle2, Clock3, Sparkles, WalletCards } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 import { showConfirm } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
-
+import { VipBadge } from "@/components/vip/vip-badge"
 import { formatCompactPointValue, formatDateTime } from "@/lib/formatters"
 import { isVipActive } from "@/lib/vip-status"
+import { cn } from "@/lib/utils"
 
 interface VipActionPanelProps {
   vipMonthlyPrice: number
@@ -29,6 +31,15 @@ interface VipActionResult {
   }
 }
 
+interface VipPlan {
+  action: VipPurchaseAction
+  level: number
+  name: string
+  duration: string
+  price: number
+  highlight?: boolean
+}
+
 function createVipRequestId() {
   if (typeof globalThis.crypto?.randomUUID === "function") {
     return globalThis.crypto.randomUUID()
@@ -37,25 +48,47 @@ function createVipRequestId() {
   return `vip-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
-export function VipActionPanel({ vipMonthlyPrice, vipQuarterlyPrice, vipYearlyPrice, pointName, userPoints = 0, vipExpiresAt = null }: VipActionPanelProps) {
-
+export function VipActionPanel({
+  vipMonthlyPrice,
+  vipQuarterlyPrice,
+  vipYearlyPrice,
+  pointName,
+  userPoints = 0,
+  vipExpiresAt = null,
+}: VipActionPanelProps) {
   const vipActive = isVipActive({ vipExpiresAt })
-
   const router = useRouter()
-
   const [loading, setLoading] = useState("")
 
-  async function runAction(action: VipPurchaseAction) {
-    const planMap: Record<VipPurchaseAction, { title: string; duration: string; price: number }> = {
-      "purchase.month": { title: "月卡 VIP1", duration: "30 天", price: vipMonthlyPrice },
-      "purchase.quarter": { title: "季卡 VIP2", duration: "90 天", price: vipQuarterlyPrice },
-      "purchase.year": { title: "年卡 VIP3", duration: "365 天", price: vipYearlyPrice },
-    }
-    const plan = planMap[action]
+  const plans: VipPlan[] = [
+    {
+      action: "purchase.month",
+      level: 1,
+      name: "月度体验",
+      duration: "30 天",
+      price: vipMonthlyPrice,
+    },
+    {
+      action: "purchase.quarter",
+      level: 2,
+      name: "季度进阶",
+      duration: "90 天",
+      price: vipQuarterlyPrice,
+      highlight: true,
+    },
+    {
+      action: "purchase.year",
+      level: 3,
+      name: "年度尊享",
+      duration: "365 天",
+      price: vipYearlyPrice,
+    },
+  ]
 
+  async function runAction(plan: VipPlan) {
     const confirmed = await showConfirm({
       title: vipActive ? "确认续费 VIP" : "确认开通 VIP",
-      description: `确认${vipActive ? "续费" : "开通"} ${plan.title} 吗？\n生效时长：${plan.duration}\n需支付：${formatCompactPointValue(plan.price)} ${pointName}\n${vipActive ? "确认后会在当前到期时间基础上顺延。" : "确认后将立即生效。"}`,
+      description: `确认${vipActive ? "续费" : "开通"} ${plan.name} VIP${plan.level} 吗？\n生效时长：${plan.duration}\n需支付：${formatCompactPointValue(plan.price)} ${pointName}\n${vipActive ? "确认后会在当前到期时间基础上顺延。" : "确认后将立即生效。"}`,
       confirmText: vipActive ? "确认续费" : "确认开通",
     })
 
@@ -63,17 +96,16 @@ export function VipActionPanel({ vipMonthlyPrice, vipQuarterlyPrice, vipYearlyPr
       return
     }
 
-    setLoading(action)
+    setLoading(plan.action)
 
     try {
       const requestId = createVipRequestId()
       const response = await fetch("/api/vip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, requestId }),
+        body: JSON.stringify({ action: plan.action, requestId }),
       })
       const result = await response.json() as VipActionResult
-
       const nextMessage = result.message ?? (response.ok ? "操作成功" : "操作失败")
 
       if (!response.ok) {
@@ -91,28 +123,82 @@ export function VipActionPanel({ vipMonthlyPrice, vipQuarterlyPrice, vipYearlyPr
 
       router.refresh()
     } catch {
-      const errorMessage = "操作失败，请稍后重试"
-      toast.error(errorMessage, vipActive ? "续费失败" : "开通失败")
+      toast.error("操作失败，请稍后重试", vipActive ? "续费失败" : "开通失败")
     } finally {
       setLoading("")
     }
   }
 
   return (
-    <div className="mt-6">
-      <div className="rounded-xl border border-border p-5">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <h3 className="text-sm font-semibold">购买 / 续费 VIP（{pointName}支付）</h3>
-          <p className="text-sm text-muted-foreground">当前{pointName}：{formatCompactPointValue(userPoints)}{vipActive ? "，当前已是 VIP，可继续续期。" : "，可直接购买开通 VIP。"}</p>
+    <section className="mt-5 rounded-2xl border border-border bg-card p-3 shadow-[0_18px_58px_-48px_rgba(15,23,42,0.35)] sm:p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div className="inline-flex h-6 items-center gap-2 rounded-full border border-border bg-background px-2.5 text-xs font-medium text-muted-foreground">
+            <WalletCards data-icon="inline-start" />
+            {pointName} 支付
+          </div>
+          <h2 className="mt-2 text-lg font-semibold tracking-tight text-foreground">选择 VIP 方案</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-5 text-muted-foreground">
+            当前余额 {formatCompactPointValue(userPoints)} {pointName}
+            {vipActive ? "，可在当前到期时间基础上顺延。" : "，开通后立即获得对应权限。"}
+          </p>
         </div>
-        <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-          <div className="flex items-center justify-between rounded-[18px] border border-border px-4 py-3 dark:bg-secondary/20"><span>月卡 30 天 = VIP1</span><Button onClick={() => runAction("purchase.month")} disabled={loading !== "" || userPoints < vipMonthlyPrice}>{loading === "purchase.month" ? "处理中..." : `${formatCompactPointValue(vipMonthlyPrice)} ${pointName}`}</Button></div>
-          <div className="flex items-center justify-between rounded-[18px] border border-border px-4 py-3 dark:bg-secondary/20"><span>季卡 90 天 = VIP2</span><Button onClick={() => runAction("purchase.quarter")} disabled={loading !== "" || userPoints < vipQuarterlyPrice}>{loading === "purchase.quarter" ? "处理中..." : `${formatCompactPointValue(vipQuarterlyPrice)} ${pointName}`}</Button></div>
-          <div className="flex items-center justify-between rounded-[18px] border border-border px-4 py-3 dark:bg-secondary/20"><span>年卡 365 天 = VIP3</span><Button onClick={() => runAction("purchase.year")} disabled={loading !== "" || userPoints < vipYearlyPrice}>{loading === "purchase.year" ? "处理中..." : `${formatCompactPointValue(vipYearlyPrice)} ${pointName}`}</Button></div>
-
-
-        </div>
+        {vipExpiresAt ? (
+          <div className="rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            <p className="font-medium text-foreground">当前到期</p>
+            <p className="mt-1">{formatDateTime(vipExpiresAt)}</p>
+          </div>
+        ) : null}
       </div>
-    </div>
+
+      <div className="mt-3 grid gap-2 lg:grid-cols-3">
+        {plans.map((plan) => {
+          const affordable = userPoints >= plan.price
+          const processing = loading === plan.action
+
+          return (
+            <article
+              key={plan.action}
+              className={cn(
+                "relative grid grid-cols-[1fr_auto] items-center gap-3 overflow-hidden rounded-2xl border bg-background p-3 transition-colors lg:block",
+                plan.highlight ? "border-foreground/18 bg-muted/30" : "border-border",
+              )}
+            >
+              {plan.highlight ? (
+                <div className="absolute right-3 top-3 hidden items-center gap-1 rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-medium text-background lg:inline-flex">
+                  <Sparkles data-icon="inline-start" />
+                  推荐
+                </div>
+              ) : null}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <VipBadge level={plan.level} compact showIcon />
+                  <span className="truncate text-sm font-semibold text-foreground">{plan.name}</span>
+                </div>
+                <p className="mt-2 text-xl font-semibold tracking-tight text-foreground lg:mt-3 lg:text-2xl">
+                  {formatCompactPointValue(plan.price)}
+                  <span className="ml-1 text-sm font-normal text-muted-foreground">{pointName}</span>
+                </p>
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground lg:mt-1.5">
+                  <Clock3 data-icon="inline-start" />
+                  生效 {plan.duration}
+                </p>
+              </div>
+              <Button
+                type="button"
+                className="w-20 rounded-full lg:mt-3 lg:w-full"
+                variant={plan.highlight ? "default" : "outline"}
+                size="sm"
+                onClick={() => runAction(plan)}
+                disabled={loading !== "" || !affordable}
+              >
+                <CheckCircle2 data-icon="inline-start" />
+                {processing ? "处理中..." : affordable ? (vipActive ? "续费" : "开通") : `${pointName}不足`}
+              </Button>
+            </article>
+          )
+        })}
+      </div>
+    </section>
   )
 }

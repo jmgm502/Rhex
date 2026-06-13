@@ -5,6 +5,7 @@ import { prisma } from "@/db/client"
 import { countUnreadNotifications } from "@/db/notification-read-queries"
 import {
   demoteUserToUser,
+  findFounderAdminId,
   findUserAvatarProfile,
   findUserUsername,
   findUserStatus,
@@ -38,6 +39,10 @@ import {
   type AdminActionDefinition,
 } from "@/lib/admin-action-types"
 import { getBlockedUserStatusChangeMessage, type RestrictiveUserStatus } from "@/lib/admin-user-status-guard"
+import { getBlockedAdminRoleChangeMessage } from "@/lib/admin-user-permission-policy"
+import { canManageTargetUser } from "@/lib/admin-permission-policy"
+import { canAdminWithPermissionOverrides } from "@/lib/admin-permission-overrides"
+import { revalidateUserBadgeMutation } from "@/lib/badge-cache-revalidation"
 import { formatBrowserLocalDateTimeInput, parseBrowserLocalDateTime } from "@/lib/browser-local-datetime"
 import { enforceSensitiveText } from "@/lib/content-safety"
 import { parseBusinessDateTime } from "@/lib/formatters"
@@ -82,20 +87,54 @@ function ensureCanApplyRestrictiveStatus(user: UserStatusRecord, status: Restric
   if (blockedMessage) apiError(403, blockedMessage)
 }
 
-function ensureCanChangeTargetRole(context: AdminActionContext, user: UserStatusRecord, nextRole: UserRole) {
-  if (user.role === UserRole.ADMIN && nextRole !== UserRole.ADMIN) {
-    apiError(403, "不能降级管理员账号")
+async function ensureCanChangeTargetRole(context: AdminActionContext, user: UserStatusRecord, nextRole: UserRole) {
+  const targetId = normalizePositiveUserId(context.targetId)
+  if (!targetId) {
+    apiError(400, "用户标识不合法")
   }
 
-  if (context.actor.id === normalizePositiveUserId(context.targetId) && nextRole !== UserRole.ADMIN) {
-    apiError(403, "不能把当前登录管理员移出管理员组")
+  const blockedMessage = getBlockedAdminRoleChangeMessage({
+    actorId: context.actor.id,
+    targetId,
+    targetRole: user.role,
+    nextRole,
+    actorIsFounder: await findFounderAdminId() === context.actor.id,
+  })
+
+  if (blockedMessage) {
+    apiError(403, blockedMessage)
   }
 }
 
-function ensureCanResetTargetPassword(context: AdminActionContext, user: UserStatusRecord) {
-  if (user.role === UserRole.ADMIN && context.actor.id !== normalizePositiveUserId(context.targetId)) {
+async function ensureCanManageTargetUserRecord(context: AdminActionContext, user: UserStatusRecord, message = "无权管理该用户") {
+  const targetId = normalizePositiveUserId(context.targetId)
+  if (!targetId) {
+    apiError(400, "用户标识不合法")
+  }
+
+  const actorIsFounder = await findFounderAdminId() === context.actor.id
+  if (!canManageTargetUser({
+    actor: context.actor,
+    actorIsFounder,
+    targetId,
+    targetRole: user.role,
+  })) {
+    apiError(403, message)
+  }
+}
+
+async function ensureCanResetTargetPassword(context: AdminActionContext, user: UserStatusRecord) {
+  const targetId = normalizePositiveUserId(context.targetId)
+  if (!targetId) {
+    apiError(400, "用户标识不合法")
+  }
+
+  const actorIsFounder = await findFounderAdminId() === context.actor.id
+  if (user.role === UserRole.ADMIN && context.actor.id !== targetId && !actorIsFounder) {
     apiError(403, "不能重置其他管理员账号的密码")
   }
+
+  await ensureCanManageTargetUserRecord(context, user, "无权重置该用户密码")
 }
 
 interface StatusExpirationInput {
@@ -227,6 +266,7 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     if (!userId) apiError(400, "用户标识不合法")
     const user = requireUserStatusRecord(await findUserStatus(userId))
     ensureCanApplyRestrictiveStatus(user, UserStatus.BANNED)
+    await ensureCanManageTargetUserRecord(context, user, "无权封禁该用户")
     const statusExpiration = readStatusExpiration(context)
     setStatusActionDetail(context, "管理员拉黑用户", getDefaultUserStatusReason(UserStatus.BANNED), statusExpiration)
     await updateUserStatus(userId, UserStatus.BANNED, statusExpiration?.expiresAt ?? null, readStatusReason(context, getDefaultUserStatusReason(UserStatus.BANNED)))
@@ -239,7 +279,8 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     const userId = normalizePositiveUserId(context.targetId)
     if (!userId) apiError(400, "用户标识不合法")
     const user = requireUserStatusRecord(await findUserStatus(userId))
-    ensureCanChangeTargetRole(context, user, UserRole.MODERATOR)
+    await ensureCanManageTargetUserRecord(context, user, "无权设置该用户为版主")
+    await ensureCanChangeTargetRole(context, user, UserRole.MODERATOR)
     await updateUserRole(userId, UserRole.MODERATOR, UserStatus.ACTIVE)
 
     await writeAdminActionLog(context, adminUserActionHandlers["user.promoteModerator"].metadata)
@@ -249,6 +290,8 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     if (!isSiteAdmin(context.actor)) apiError(403, "仅管理员可设置管理员")
     const userId = normalizePositiveUserId(context.targetId)
     if (!userId) apiError(400, "用户标识不合法")
+    const user = requireUserStatusRecord(await findUserStatus(userId))
+    await ensureCanChangeTargetRole(context, user, UserRole.ADMIN)
     await promoteUserToAdmin(userId)
 
     await writeAdminActionLog(context, adminUserActionHandlers["user.setAdmin"].metadata)
@@ -259,7 +302,8 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     const userId = normalizePositiveUserId(context.targetId)
     if (!userId) apiError(400, "用户标识不合法")
     const user = requireUserStatusRecord(await findUserStatus(userId))
-    ensureCanChangeTargetRole(context, user, UserRole.USER)
+    await ensureCanManageTargetUserRecord(context, user, "无权调整该用户角色")
+    await ensureCanChangeTargetRole(context, user, UserRole.USER)
     await demoteUserToUser(userId)
 
     await writeAdminActionLog(context, adminUserActionHandlers["user.demoteToUser"].metadata)
@@ -269,6 +313,8 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     if (!isSiteAdmin(context.actor)) apiError(403, "仅管理员可调整积分")
     const userId = normalizePositiveUserId(context.targetId)
     if (!userId) apiError(400, "用户标识不合法")
+    const targetUser = requireUserStatusRecord(await findUserStatus(userId))
+    await ensureCanManageTargetUserRecord(context, targetUser, "无权调整该用户积分")
     const points = Math.max(0, readAdminActionNumber(context.body, "points") ?? 0)
     const settings = await getServerSiteSettings()
     const result = await prisma.$transaction(async (tx) => {
@@ -364,7 +410,7 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     if (!newPassword) apiError(400, "新密码不能为空")
     if (newPassword.length < 6 || newPassword.length > 64) apiError(400, "新密码长度需为 6-64 位")
     const userStatus = requireUserStatusRecord(await findUserStatus(userId))
-    ensureCanResetTargetPassword(context, userStatus)
+    await ensureCanResetTargetPassword(context, userStatus)
     const user = await findUserUsername(userId)
     if (!user) apiError(404, "用户不存在")
     const passwordHash = await bcrypt.hash(newPassword, 10)
@@ -375,6 +421,9 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
   }),
   "user.profile.note": defineAdminAction({ targetType: "USER", buildDetail: () => "管理员添加用户备注" }, async (context) => {
     if (!isSiteAdmin(context.actor)) apiError(403, "仅管理员可记录用户备注")
+    const userId = normalizePositiveUserId(context.targetId)
+    if (!userId) apiError(400, "用户标识不合法")
+    await ensureCanManageTargetUserRecord(context, requireUserStatusRecord(await findUserStatus(userId)), "无权记录该用户备注")
     await writeAdminActionLog(context, adminUserActionHandlers["user.profile.note"].metadata)
     return { message: "备注已记录" }
   }),
@@ -382,6 +431,7 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     if (!isSiteAdmin(context.actor)) apiError(403, "仅管理员可修改用户头像")
     const userId = normalizePositiveUserId(context.targetId)
     if (!userId) apiError(400, "用户标识不合法")
+    await ensureCanManageTargetUserRecord(context, requireUserStatusRecord(await findUserStatus(userId)), "无权修改该用户头像")
 
     const avatarPath = readAdminActionString(context.body, "avatarPath")
     if (avatarPath.length > 1024) {
@@ -401,6 +451,7 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     if (!isSiteAdmin(context.actor)) apiError(403, "仅管理员可修改基础资料")
     const userId = normalizePositiveUserId(context.targetId)
     if (!userId) apiError(400, "用户标识不合法")
+    await ensureCanManageTargetUserRecord(context, requireUserStatusRecord(await findUserStatus(userId)), "无权修改该用户资料")
 
     const [currentUser, settings] = await Promise.all([
       findUserUsername(userId),
@@ -477,6 +528,7 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     if (!isSiteAdmin(context.actor)) apiError(403, "仅管理员可调整 VIP")
     const userId = normalizePositiveUserId(context.targetId)
     if (!userId) apiError(400, "用户标识不合法")
+    await ensureCanManageTargetUserRecord(context, requireUserStatusRecord(await findUserStatus(userId)), "无权调整该用户 VIP")
     const user = await findUserVipState(userId)
     if (!user) apiError(404, "用户不存在")
     const isVipActive = Boolean(user.vipExpiresAt && new Date(user.vipExpiresAt).getTime() > Date.now())
@@ -489,6 +541,7 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     if (!isSiteAdmin(context.actor)) apiError(403, "仅管理员可配置 VIP")
     const userId = normalizePositiveUserId(context.targetId)
     if (!userId) apiError(400, "用户标识不合法")
+    await ensureCanManageTargetUserRecord(context, requireUserStatusRecord(await findUserStatus(userId)), "无权配置该用户 VIP")
     const vipLevel = normalizeConfigurableVipLevel(readAdminActionNumber(context.body, "vipLevel"), 1)
     const vipExpiresAt = context.body.vipExpiresAt ? parseBusinessDateTime(String(context.body.vipExpiresAt)) : null
 
@@ -502,9 +555,10 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     const badgeName = readAdminActionString(context.body, "badgeName")
     return badgeName ? `管理员手动颁发勋章：${badgeName}` : "管理员手动颁发勋章"
   } }, async (context) => {
-    if (!isSiteAdmin(context.actor)) apiError(403, "仅管理员可手动颁发勋章")
+    if (!await canAdminWithPermissionOverrides(context.actor, "admin.users.grantBadges", { isFounder: await findFounderAdminId() === context.actor.id })) apiError(403, "仅管理员可手动颁发勋章")
     const userId = normalizePositiveUserId(context.targetId)
     if (!userId) apiError(400, "用户标识不合法")
+    await ensureCanManageTargetUserRecord(context, requireUserStatusRecord(await findUserStatus(userId)), "无权给该用户颁发勋章")
     const badgeId = requireAdminActionString(context.body, "badgeId", "请选择要颁发的勋章")
     const badge = await findBadgeSummaryById(badgeId)
     if (!badge) apiError(404, "勋章不存在")
@@ -538,6 +592,7 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
         content: `管理员已为你手动颁发勋章“${badge.name}”。你可以前往勋章中心查看并决定是否佩戴展示。`,
       })
     })
+    revalidateUserBadgeMutation(userId)
 
     await writeAdminActionLog(context, adminUserActionHandlers["user.badge.grant"].metadata)
     return { message: `已向 @${user.username} 颁发勋章：${badge.name}` }
@@ -549,6 +604,7 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     if (!isSiteAdmin(context.actor)) apiError(403, "仅管理员可手动发送通知")
     const userId = normalizePositiveUserId(context.targetId)
     if (!userId) apiError(400, "用户标识不合法")
+    await ensureCanManageTargetUserRecord(context, requireUserStatusRecord(await findUserStatus(userId)), "无权给该用户发送通知")
     const title = requireAdminActionString(context.body, "title", "请填写通知标题")
     const content = requireAdminActionString(context.body, "content", "请填写通知内容")
     const user = await findUserUsername(userId)

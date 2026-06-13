@@ -100,10 +100,10 @@ export default async function WritePage(props: PageProps<"/write">) {
     return (
       <div className="min-h-screen ">
         <SiteHeader />
-        <main className="mx-auto max-w-[720px] px-4 py-10 lg:px-6">
+        <main className="mx-auto max-w-[1200px] px-1 py-10">
           <AddonSlotRenderer slot="write.page.before" />
           <AddonSurfaceRenderer surface="write.page" props={{ mode, settings, user: null }}>
-            <Card>
+            <Card className="mx-auto max-w-[720px]">
               <CardHeader>
                 <AddonSlotRenderer slot="write.header.before" />
                 <AddonSurfaceRenderer surface="write.header" props={{ mode, settings, user: null }}>
@@ -155,7 +155,7 @@ export default async function WritePage(props: PageProps<"/write">) {
   return (
     <div className="min-h-screen ">
       <SiteHeader />
-      <main className="mx-auto max-w-[900px] px-4 py-6 lg:px-6">
+      <main className="mx-auto max-w-[1200px] px-1 py-6">
         <AddonSlotRenderer slot="write.page.before" />
         <AddonSurfaceRenderer surface="write.page" props={{ mode, preferredBoardSlug, settings, user }}>
           <Card className="min-[1220px]:overflow-visible">

@@ -28,7 +28,7 @@ export default async function YinYangContractFunPage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <div className="mx-auto max-w-[1280px] px-4 py-8 mt-8">
+      <div className="mx-auto mt-8 max-w-[1200px] px-1 py-8">
         <AddonSlotRenderer slot="funs.app.page.before" props={funsAppSlotProps} />
         <AddonSurfaceRenderer surface="funs.app.page" props={funsAppSlotProps}>
           <AddonSlotRenderer slot="funs.app.content.before" props={funsAppSlotProps} />

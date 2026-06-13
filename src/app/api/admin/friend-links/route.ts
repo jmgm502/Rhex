@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache"
 
 import { apiSuccess, createAdminRouteHandler, readJsonBody, readOptionalStringField } from "@/lib/api-route"
-import { createFriendLinkByAdmin, revalidateFriendLinksCache, reviewFriendLink } from "@/lib/friend-links"
+import { createFriendLinkByAdmin, deleteFriendLinkByAdmin, revalidateFriendLinksCache, reviewFriendLink } from "@/lib/friend-links"
 
 export const POST = createAdminRouteHandler(async ({ request }) => {
   const body = await readJsonBody(request)
@@ -29,6 +29,17 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
   }
 
   const id = readOptionalStringField(body, "id")
+  if (action === "delete") {
+    await deleteFriendLinkByAdmin(id)
+
+    revalidateFriendLinksCache()
+    revalidatePath("/")
+    revalidatePath("/link")
+    revalidatePath("/admin")
+
+    return apiSuccess(undefined, "友情链接已删除")
+  }
+
   const reviewAction = action as "approve" | "reject" | "disable" | "update"
 
   await reviewFriendLink({

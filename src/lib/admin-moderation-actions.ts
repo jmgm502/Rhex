@@ -14,6 +14,8 @@ import { defineAdminAction, writeAdminActionLog, type AdminActionDefinition } fr
 import { revalidateContentListCaches } from "@/lib/content-list-cache"
 import { revalidateHomeSidebarStatsCache } from "@/lib/home-sidebar-stats"
 import { ensureCanEditBoard, ensureCanManageComment } from "@/lib/moderator-permissions"
+import type { AdminActor } from "@/lib/moderator-permissions"
+import { getAdminManagementTier } from "@/lib/admin-permission-policy"
 import { createSystemNotification } from "@/lib/notification-writes"
 import { revalidatePostCommentCache } from "@/lib/post-detail-cache"
 import { toggleGodCommentByAdmin } from "@/lib/god-comments"
@@ -24,8 +26,15 @@ function revalidateCommentPostCache(comment: { postId: string; post: { slug: str
   revalidatePostCommentCache({ postId: comment.postId, slug: comment.post.slug })
 }
 
+function ensureReviewerCanUseCommentAction(actor: AdminActor, action: string) {
+  if (getAdminManagementTier(actor) === "REVIEWER" && action !== "comment.approve" && action !== "comment.reject") {
+    apiError(403, "审核员只能审核评论")
+  }
+}
+
 export const adminModerationActionHandlers: Record<string, AdminActionDefinition> = {
   "comment.hide": defineAdminAction({ targetType: "COMMENT", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员下线评论" }, async (context) => {
+    ensureReviewerCanUseCommentAction(context.actor, "comment.hide")
     const comment = await ensureCanManageComment(context.actor, context.targetId)
     await updateCommentModerationState(context.targetId, {
       status: CommentStatus.HIDDEN,
@@ -57,6 +66,7 @@ export const adminModerationActionHandlers: Record<string, AdminActionDefinition
     }
   }),
   "comment.delete": defineAdminAction({ targetType: "COMMENT", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员删除评论" }, async (context) => {
+    ensureReviewerCanUseCommentAction(context.actor, "comment.delete")
     const comment = await ensureCanManageComment(context.actor, context.targetId)
     const reason = context.message || "管理员删除评论"
     await executeAddonActionHook("comment.delete.before", {
@@ -96,6 +106,7 @@ export const adminModerationActionHandlers: Record<string, AdminActionDefinition
     }
   }),
   "comment.show": defineAdminAction({ targetType: "COMMENT", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员恢复评论上线" }, async (context) => {
+    ensureReviewerCanUseCommentAction(context.actor, "comment.show")
     const comment = await ensureCanManageComment(context.actor, context.targetId)
     await updateCommentModerationState(context.targetId, {
       status: CommentStatus.NORMAL,
@@ -127,6 +138,7 @@ export const adminModerationActionHandlers: Record<string, AdminActionDefinition
     }
   }),
   "comment.approve": defineAdminAction({ targetType: "COMMENT", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员审核通过评论" }, async (context) => {
+    ensureReviewerCanUseCommentAction(context.actor, "comment.approve")
     const comment = await ensureCanManageComment(context.actor, context.targetId)
     await updateCommentModerationState(context.targetId, {
       status: CommentStatus.NORMAL,
@@ -167,6 +179,7 @@ export const adminModerationActionHandlers: Record<string, AdminActionDefinition
     }
   }),
   "comment.reject": defineAdminAction({ targetType: "COMMENT", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员驳回评论审核" }, async (context) => {
+    ensureReviewerCanUseCommentAction(context.actor, "comment.reject")
     const comment = await ensureCanManageComment(context.actor, context.targetId)
     await updateCommentModerationState(context.targetId, {
       status: CommentStatus.HIDDEN,
@@ -198,6 +211,7 @@ export const adminModerationActionHandlers: Record<string, AdminActionDefinition
     }
   }),
   "comment.markGod": defineAdminAction({ targetType: "COMMENT", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员设置神评" }, async (context) => {
+    ensureReviewerCanUseCommentAction(context.actor, "comment.markGod")
     const comment = await ensureCanManageComment(context.actor, context.targetId)
     if (comment.parentId) {
       apiError(400, "仅支持将一级评论设为神评")
@@ -218,6 +232,7 @@ export const adminModerationActionHandlers: Record<string, AdminActionDefinition
     }
   }),
   "comment.unmarkGod": defineAdminAction({ targetType: "COMMENT", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员取消神评" }, async (context) => {
+    ensureReviewerCanUseCommentAction(context.actor, "comment.unmarkGod")
     const comment = await ensureCanManageComment(context.actor, context.targetId)
     if (comment.parentId) {
       apiError(400, "仅支持操作一级评论")
@@ -235,6 +250,7 @@ export const adminModerationActionHandlers: Record<string, AdminActionDefinition
     }
   }),
   "board.togglePosting": defineAdminAction({ targetType: "BOARD", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员切换版块发帖权限" }, async (context) => {
+    ensureReviewerCanUseCommentAction(context.actor, "board.togglePosting")
     await ensureCanEditBoard(context.actor, context.targetId)
     const board = await findBoardPostingState(context.targetId)
     if (!board) apiError(404, "版块不存在")
@@ -245,6 +261,7 @@ export const adminModerationActionHandlers: Record<string, AdminActionDefinition
     return { message: board.allowPost ? "已关闭发帖" : "已开放发帖" }
   }),
   "board.hide": defineAdminAction({ targetType: "BOARD", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员切换版块显示状态" }, async (context) => {
+    ensureReviewerCanUseCommentAction(context.actor, "board.hide")
     await ensureCanEditBoard(context.actor, context.targetId)
     const board = await findBoardVisibilityState(context.targetId)
     if (!board) apiError(404, "版块不存在")

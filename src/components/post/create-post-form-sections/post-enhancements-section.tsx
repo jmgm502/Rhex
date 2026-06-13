@@ -1,13 +1,22 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
 import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react"
+import {
+  GripVertical,
   ImageIcon,
   Info,
   Loader2,
   MessageSquareLock,
   PanelRightOpen,
   Paperclip,
+  RotateCcw,
   Sparkles,
 } from "lucide-react"
 
@@ -21,6 +30,16 @@ import {
 import { cn } from "@/lib/utils"
 import { formatCompactPointValue } from "@/lib/formatters"
 import { getPostRewardPoolModeLabel } from "@/lib/post-reward-pool-config"
+
+const DESKTOP_PANEL_STORAGE_KEY = "post-enhancements-panel-position"
+const DESKTOP_PANEL_WIDTH = 202
+const DESKTOP_PANEL_MARGIN = 12
+const DESKTOP_PANEL_DEFAULT_TOP = 112
+
+interface DesktopPanelPosition {
+  left: number
+  top: number
+}
 
 function DesktopActionCard({
   icon,
@@ -253,6 +272,15 @@ export function PostEnhancementsSection({
   actions,
 }: PostEnhancementsSectionProps) {
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false)
+  const [desktopPanelPosition, setDesktopPanelPosition] = useState<DesktopPanelPosition | null>(null)
+  const desktopPanelRef = useRef<HTMLDivElement | null>(null)
+  const desktopPanelDragRef = useRef<{
+    pointerId: number
+    startX: number
+    startY: number
+    startLeft: number
+    startTop: number
+  } | null>(null)
   const {
     finalTags,
     autoExtractedTags,
@@ -333,6 +361,126 @@ export function PostEnhancementsSection({
     setMobilePanelOpen(false)
     action()
   }
+  const getDefaultDesktopPanelPosition = () => {
+    if (typeof window === "undefined") {
+      return { left: 0, top: DESKTOP_PANEL_DEFAULT_TOP }
+    }
+
+    return {
+      left: window.innerWidth - DESKTOP_PANEL_WIDTH - DESKTOP_PANEL_MARGIN,
+      top: DESKTOP_PANEL_DEFAULT_TOP,
+    }
+  }
+  const clampDesktopPanelPosition = (position: DesktopPanelPosition) => {
+    if (typeof window === "undefined") {
+      return position
+    }
+
+    const panelWidth = desktopPanelRef.current?.offsetWidth ?? DESKTOP_PANEL_WIDTH
+    const panelHeight = desktopPanelRef.current?.offsetHeight ?? 420
+    const maxLeft = Math.max(DESKTOP_PANEL_MARGIN, window.innerWidth - panelWidth - DESKTOP_PANEL_MARGIN)
+    const maxTop = Math.max(DESKTOP_PANEL_MARGIN, window.innerHeight - panelHeight - DESKTOP_PANEL_MARGIN)
+
+    return {
+      left: Math.min(Math.max(DESKTOP_PANEL_MARGIN, position.left), maxLeft),
+      top: Math.min(Math.max(DESKTOP_PANEL_MARGIN, position.top), maxTop),
+    }
+  }
+  const resetDesktopPanelPosition = () => {
+    const nextPosition = clampDesktopPanelPosition(getDefaultDesktopPanelPosition())
+    setDesktopPanelPosition(nextPosition)
+    window.localStorage.removeItem(DESKTOP_PANEL_STORAGE_KEY)
+  }
+  const handleDesktopPanelPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) {
+      return
+    }
+
+    const position = desktopPanelPosition ?? clampDesktopPanelPosition(getDefaultDesktopPanelPosition())
+    desktopPanelDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: position.left,
+      startTop: position.top,
+    }
+    setDesktopPanelPosition(position)
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId)
+    } catch {
+      // Synthetic pointer events in tests may not have an active pointer to capture.
+    }
+  }
+  const handleDesktopPanelPointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = desktopPanelDragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return
+    }
+
+    event.preventDefault()
+    setDesktopPanelPosition(
+      clampDesktopPanelPosition({
+        left: drag.startLeft + event.clientX - drag.startX,
+        top: drag.startTop + event.clientY - drag.startY,
+      }),
+    )
+  }
+  const handleDesktopPanelPointerEnd = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = desktopPanelDragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return
+    }
+
+    desktopPanelDragRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+  const desktopPanelStyle = desktopPanelPosition
+    ? ({
+        left: desktopPanelPosition.left,
+        top: desktopPanelPosition.top,
+      } satisfies CSSProperties)
+    : undefined
+
+  useEffect(() => {
+    const storedPosition = window.localStorage.getItem(DESKTOP_PANEL_STORAGE_KEY)
+    if (storedPosition) {
+      try {
+        const parsedPosition = JSON.parse(storedPosition) as Partial<DesktopPanelPosition>
+        if (typeof parsedPosition.left === "number" && typeof parsedPosition.top === "number") {
+          setDesktopPanelPosition(clampDesktopPanelPosition(parsedPosition as DesktopPanelPosition))
+          return
+        }
+      } catch {
+        window.localStorage.removeItem(DESKTOP_PANEL_STORAGE_KEY)
+      }
+    }
+
+    setDesktopPanelPosition(clampDesktopPanelPosition(getDefaultDesktopPanelPosition()))
+  }, [])
+
+  useEffect(() => {
+    function handleResize() {
+      setDesktopPanelPosition((current) =>
+        clampDesktopPanelPosition(current ?? getDefaultDesktopPanelPosition()),
+      )
+    }
+
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
+  useEffect(() => {
+    if (!desktopPanelPosition) {
+      return
+    }
+
+    window.localStorage.setItem(
+      DESKTOP_PANEL_STORAGE_KEY,
+      JSON.stringify(desktopPanelPosition),
+    )
+  }, [desktopPanelPosition])
 
   return (
     <div
@@ -539,115 +687,145 @@ export function PostEnhancementsSection({
           </div>
         ) : null}
 
-        <div className="pointer-events-none fixed left-[calc(50%+444px)] top-28 z-30 w-[202px]">
-          <div className="pointer-events-auto space-y-2 rounded-xl border border-border bg-background/88 p-2.5 shadow-[0_20px_48px_rgba(0,0,0,0.18)] backdrop-blur-md">
-            <div className="px-1">
-              <p className="text-[10px] font-medium tracking-[0.12em] text-muted-foreground">
-                功能区
-              </p>
+        <div
+          ref={desktopPanelRef}
+          className={cn(
+            "fixed z-30 w-[202px]",
+            desktopPanelPosition ? "" : "left-[calc(50%+444px)] top-28",
+          )}
+          style={desktopPanelStyle}
+        >
+          <div className="space-y-2 rounded-xl border border-border bg-background/88 p-2.5 shadow-[0_20px_48px_rgba(0,0,0,0.18)] backdrop-blur-md">
+            <div className="flex items-center justify-between gap-2 px-0.5">
+              <button
+                type="button"
+                aria-label="拖动功能区"
+                title="拖动功能区"
+                onPointerDown={handleDesktopPanelPointerDown}
+                onPointerMove={handleDesktopPanelPointerMove}
+                onPointerUp={handleDesktopPanelPointerEnd}
+                onPointerCancel={handleDesktopPanelPointerEnd}
+                className="flex min-w-0 flex-1 cursor-grab touch-none select-none items-center gap-1.5 rounded-lg px-1.5 py-1 text-muted-foreground transition-colors hover:bg-muted active:cursor-grabbing"
+              >
+                <GripVertical className="size-3.5 shrink-0" />
+                <p className="truncate text-[10px] font-medium tracking-[0.12em]">
+                  功能区
+                </p>
+              </button>
+              <button
+                type="button"
+                aria-label="重置功能区位置"
+                title="重置功能区位置"
+                onClick={resetDesktopPanelPosition}
+                className="inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <RotateCcw className="size-3" />
+              </button>
             </div>
 
-            <DesktopActionCard
-              icon={<Sparkles className="h-4 w-4" />}
-              title="标签提取"
-              summary={
-                finalTags.length > 0
-                  ? `已选 ${finalTags.length} 个`
-                  : autoExtractedTags.length > 0
-                    ? `候选 ${autoExtractedTags.length} 个`
-                    : "提取候选标签"
-              }
-              active={finalTags.length > 0}
-              onClick={actions.onOpenTagModal}
-            />
-
-            {rewardPoolEnabled ? (
+            <div className="flex max-h-[calc(100vh-10rem)] flex-col gap-2 overflow-y-auto pr-0.5">
               <DesktopActionCard
                 icon={<Sparkles className="h-4 w-4" />}
-                title="帖子激励池"
-                summary={rewardPoolDesktopSummary}
-                active={redPacketEnabled}
-                onClick={actions.onOpenRewardPoolModal}
-                onClear={actions.onClearRewardPool}
-                disabled={!rewardPoolEditable}
+                title="标签提取"
+                summary={
+                  finalTags.length > 0
+                    ? `已选 ${finalTags.length} 个`
+                    : autoExtractedTags.length > 0
+                      ? `候选 ${autoExtractedTags.length} 个`
+                      : "提取候选标签"
+                }
+                active={finalTags.length > 0}
+                onClick={actions.onOpenTagModal}
               />
-            ) : null}
 
-            {showAttachmentEntry ? (
+              {rewardPoolEnabled ? (
+                <DesktopActionCard
+                  icon={<Sparkles className="h-4 w-4" />}
+                  title="帖子激励池"
+                  summary={rewardPoolDesktopSummary}
+                  active={redPacketEnabled}
+                  onClick={actions.onOpenRewardPoolModal}
+                  onClear={actions.onClearRewardPool}
+                  disabled={!rewardPoolEditable}
+                />
+              ) : null}
+
+              {showAttachmentEntry ? (
+                <DesktopActionCard
+                  icon={<Paperclip className="h-4 w-4" />}
+                  title="帖子附件"
+                  summary={attachmentCount > 0 ? `已添加 ${attachmentCount} 项` : "未配置附件"}
+                  active={attachmentCount > 0}
+                  onClick={actions.onOpenAttachmentModal}
+                />
+              ) : null}
+
               <DesktopActionCard
-                icon={<Paperclip className="h-4 w-4" />}
-                title="帖子附件"
-                summary={attachmentCount > 0 ? `已添加 ${attachmentCount} 项` : "未配置附件"}
-                active={attachmentCount > 0}
-                onClick={actions.onOpenAttachmentModal}
+                icon={
+                  coverUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ImageIcon className="h-4 w-4" />
+                  )
+                }
+                title="封面图"
+                summary={coverUploading ? "上传中..." : coverPath.trim() ? "已设置" : "自动提取"}
+                active={Boolean(coverPath.trim())}
+                onClick={actions.onOpenCoverModal}
+                onClear={actions.onCoverClear}
               />
-            ) : null}
 
-            <DesktopActionCard
-              icon={
-                coverUploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ImageIcon className="h-4 w-4" />
-                )
-              }
-              title="封面图"
-              summary={coverUploading ? "上传中..." : coverPath.trim() ? "已设置" : "自动提取"}
-              active={Boolean(coverPath.trim())}
-              onClick={actions.onOpenCoverModal}
-              onClear={actions.onCoverClear}
-            />
+              <DesktopToggleCard
+                checked={commentsVisibleToAuthorOnly}
+                onChange={actions.onCommentsVisibleToAuthorOnlyChange}
+              />
 
-            <DesktopToggleCard
-              checked={commentsVisibleToAuthorOnly}
-              onChange={actions.onCommentsVisibleToAuthorOnlyChange}
-            />
+              <DesktopActionCard
+                icon={<MessageSquareLock className="h-4 w-4" />}
+                title="登录后可看"
+                summary={loginUnlockContent.trim() ? "已配置" : "未配置"}
+                active={Boolean(loginUnlockContent.trim())}
+                onClick={actions.onOpenLoginModal}
+                onClear={actions.onClearLoginUnlock}
+              />
 
-            <DesktopActionCard
-              icon={<MessageSquareLock className="h-4 w-4" />}
-              title="登录后可看"
-              summary={loginUnlockContent.trim() ? "已配置" : "未配置"}
-              active={Boolean(loginUnlockContent.trim())}
-              onClick={actions.onOpenLoginModal}
-              onClear={actions.onClearLoginUnlock}
-            />
+              <DesktopActionCard
+                icon={<MessageSquareLock className="h-4 w-4" />}
+                title="回复后可看"
+                summary={replyUnlockContent.trim() ? "已配置" : "未配置"}
+                active={Boolean(replyUnlockContent.trim())}
+                onClick={actions.onOpenReplyModal}
+                onClear={actions.onClearReplyUnlock}
+              />
 
-            <DesktopActionCard
-              icon={<MessageSquareLock className="h-4 w-4" />}
-              title="回复后可看"
-              summary={replyUnlockContent.trim() ? "已配置" : "未配置"}
-              active={Boolean(replyUnlockContent.trim())}
-              onClick={actions.onOpenReplyModal}
-              onClear={actions.onClearReplyUnlock}
-            />
+              <DesktopActionCard
+                icon={<Info className="h-4 w-4" />}
+                title="购买后可看"
+                summary={
+                  purchaseUnlockContent.trim() ? `${formatCompactPointValue(Number(purchasePrice) || 0)} / ${pointName}` : "未配置"
+                }
+                active={Boolean(purchaseUnlockContent.trim())}
+                onClick={actions.onOpenPurchaseModal}
+                onClear={actions.onClearPurchaseUnlock}
+              />
 
-            <DesktopActionCard
-              icon={<Info className="h-4 w-4" />}
-              title="购买后可看"
-              summary={
-                purchaseUnlockContent.trim() ? `${formatCompactPointValue(Number(purchasePrice) || 0)} / ${pointName}` : "未配置"
-              }
-              active={Boolean(purchaseUnlockContent.trim())}
-              onClick={actions.onOpenPurchaseModal}
-              onClear={actions.onClearPurchaseUnlock}
-            />
-
-            <DesktopActionCard
-              icon={<Info className="h-4 w-4" />}
-              title="整帖门槛"
-              summary={
-                Number(minViewVipLevel) > 0
-                  ? `VIP${Number(minViewVipLevel)}${
-                      Number(minViewLevel) > 0 ? ` / Lv.${Number(minViewLevel)}` : ""
-                    }`
-                  : Number(minViewLevel) > 0
-                    ? `Lv.${Number(minViewLevel)}`
-                    : "公开可见"
-              }
-              active={Number(minViewLevel) > 0 || Number(minViewVipLevel) > 0}
-              onClick={actions.onOpenViewLevelModal}
-              onClear={actions.onClearViewLevel}
-            />
+              <DesktopActionCard
+                icon={<Info className="h-4 w-4" />}
+                title="整帖门槛"
+                summary={
+                  Number(minViewVipLevel) > 0
+                    ? `VIP${Number(minViewVipLevel)}${
+                        Number(minViewLevel) > 0 ? ` / Lv.${Number(minViewLevel)}` : ""
+                      }`
+                    : Number(minViewLevel) > 0
+                      ? `Lv.${Number(minViewLevel)}`
+                      : "公开可见"
+                }
+                active={Number(minViewLevel) > 0 || Number(minViewVipLevel) > 0}
+                onClick={actions.onOpenViewLevelModal}
+                onClear={actions.onClearViewLevel}
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -27,7 +27,7 @@ export async function findModeratorScopeSetup(userId: number, zoneIds: string[],
     boardIds.length > 0
       ? prisma.board.findMany({
           where: { id: { in: boardIds } },
-          select: { id: true },
+          select: { id: true, zoneId: true },
         })
       : Promise.resolve([]),
   ])
@@ -96,10 +96,10 @@ export async function findModeratorTargetContext(input: {
 
   const board = await prisma.board.findUnique({
     where: { id: input.targetId },
-    select: { id: true, name: true },
+    select: { id: true, name: true, zoneId: true },
   })
 
-  return board ? { id: board.id, name: board.name, type: "board" as const } : null
+  return board ? { id: board.id, name: board.name, zoneId: board.zoneId, type: "board" as const } : null
 }
 
 export async function upsertModeratorTargetScope(input: {

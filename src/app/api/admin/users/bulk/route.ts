@@ -27,4 +27,5 @@ export const POST = createAdminRouteHandler(async ({ request, adminUser }) => {
   errorMessage: "批量用户操作失败",
   logPrefix: "[api/admin/users/bulk] unexpected error",
   unauthorizedMessage: "无权批量操作用户",
+  permission: "admin.users.manage",
 })

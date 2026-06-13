@@ -8,6 +8,9 @@ import type {
 export interface AdminUserModalProps {
   user: AdminUserListItem
   moderatorScopeOptions: AdminUserListResult["moderatorScopeOptions"]
+  actorUserId: number
+  actorCanDemoteAdmins: boolean
+  triggerClassName?: string
 }
 
 export interface EditableScopeItem {
@@ -53,6 +56,11 @@ export interface PermissionsFormState {
   message: string
   feedback: string
   scopeFeedback: string
+  adminPermissionFeedback: string
+  adminPermissionGrants: Array<{
+    permissionKey: string
+    allowed: boolean
+  }>
   zoneScopes: EditableScopeItem[]
   boardScopes: EditableScopeItem[]
 }

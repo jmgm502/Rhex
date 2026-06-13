@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { AdminModuleSearch } from "@/components/admin/admin-module-search"
 import { BackgroundWorkerAdminPage } from "@/components/admin/background-worker-admin-page"
 import { AdminShell } from "@/components/admin/admin-shell"
-import { requireAdminUser } from "@/lib/admin"
+import { getAdminActorPermissionState } from "@/lib/admin-page-auth"
 import { getBackgroundWorkerAdminData } from "@/lib/background-job-admin"
 import { readSearchParam } from "@/lib/search-params"
 import { getSiteSettings } from "@/lib/site-settings"
@@ -24,10 +24,14 @@ export default async function WorkerAdminPage(props: PageProps<"/admin/apps/work
   const requestedDelayedPage = Math.max(1, Number(readSearchParam(searchParams?.delayedPage) ?? "1") || 1)
   const requestedDeadLetterPage = Math.max(1, Number(readSearchParam(searchParams?.deadLetterPage) ?? "1") || 1)
   const requestedLogPage = Math.max(1, Number(readSearchParam(searchParams?.logPage) ?? "1") || 1)
-  const admin = await requireAdminUser()
-  if (!admin) {
+  const auth = await getAdminActorPermissionState("admin.apps.manage")
+  if (!auth.actor) {
     redirect("/login?redirect=/admin/apps/worker")
   }
+  if (!auth.authorized) {
+    redirect("/admin")
+  }
+  const { actor: admin, tier: adminTier } = auth
 
   const data = await getBackgroundWorkerAdminData({
     delayedPage: requestedDelayedPage,
@@ -48,6 +52,8 @@ export default async function WorkerAdminPage(props: PageProps<"/admin/apps/work
     <AdminShell
       currentKey="apps"
       adminName={admin.nickname ?? admin.username}
+      adminRole={admin.role}
+      adminTier={adminTier}
       headerDescription="查看后台任务 worker 的队列状态、延迟任务明细、执行日志、结算进度、死信告警和在线连接。"
       headerSearch={<AdminModuleSearch className="w-full" />}
       breadcrumbs={[

@@ -19,7 +19,7 @@ export default function ReadingHistoryPage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      <main className="mx-auto max-w-[960px] px-3 py-6 sm:px-4">
+      <main className="mx-auto max-w-[1200px] px-1 py-6">
         <AddonSlotRenderer slot="history.page.before" />
         <AddonSurfaceRenderer surface="history.page">
           <div className="space-y-4">

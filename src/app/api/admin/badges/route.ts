@@ -7,6 +7,7 @@ import { getRequestIp, writeAdminLog } from "@/lib/admin"
 import { isBadgeRuleTypeValue, type BadgeRuleTypeValue } from "@/lib/badge-rule-definitions"
 import { prisma } from "@/db/client"
 import { findBadgeEffectRulesByBadgeIds } from "@/db/badge-queries"
+import { revalidateBadgeDefinitionMutation } from "@/lib/badge-cache-revalidation"
 import {
   isFunctionalPointEffectTargetType,
   isPointEffectScopeCompatibleWithTargetType,
@@ -422,6 +423,7 @@ export const POST = createAdminRouteHandler(async ({ request, adminUser }) => {
   })
 
   await writeAdminLog(adminUser.id, "badge.create", "BADGE", badge.id, `创建勋章 ${name}`, requestIp)
+  revalidateBadgeDefinitionMutation()
   return apiSuccess({ id: badge.id }, "勋章已创建")
 }, {
   errorMessage: "创建勋章失败",
@@ -476,6 +478,7 @@ export const PUT = createAdminRouteHandler(async ({ request, adminUser }) => {
   })
 
   await writeAdminLog(adminUser.id, "badge.update", "BADGE", id, `更新勋章 ${name}`, requestIp)
+  revalidateBadgeDefinitionMutation()
   return apiSuccess(undefined, "勋章已更新")
 }, {
   errorMessage: "更新勋章失败",
@@ -495,6 +498,7 @@ export const DELETE = createAdminRouteHandler(async ({ request, adminUser }) => 
 
   await prisma.badge.delete({ where: { id } })
   await writeAdminLog(adminUser.id, "badge.delete", "BADGE", id, "删除勋章", requestIp)
+  revalidateBadgeDefinitionMutation()
   return apiSuccess(undefined, "勋章已删除")
 }, {
   errorMessage: "删除勋章失败",

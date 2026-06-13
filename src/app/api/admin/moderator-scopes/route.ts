@@ -13,4 +13,5 @@ export const POST = createAdminRouteHandler(async ({ request, adminUser }) => {
   errorMessage: "保存版主管辖范围失败",
   logPrefix: "[api/admin/moderator-scopes] unexpected error",
   unauthorizedMessage: "无权操作",
+  allowModerator: true,
 })

@@ -51,9 +51,9 @@ export default async function NotificationsPage(
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
-        <main className="mx-auto max-w-[900px] px-4 py-8">
+        <main className="mx-auto max-w-[1200px] px-1 py-8">
           <AddonSlotRenderer slot="notifications.page.before" />
-          <Card>
+          <Card className="mx-auto max-w-[900px]">
             <CardHeader>
               <CardTitle>消息通知</CardTitle>
             </CardHeader>
@@ -78,7 +78,7 @@ export default async function NotificationsPage(
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="mx-auto max-w-[900px] px-4 py-8">
+      <main className="mx-auto max-w-[1200px] px-1 py-8">
         <div className="space-y-6">
           <AddonSlotRenderer slot="notifications.page.before" />
           <AddonSurfaceRenderer surface="notifications.page" props={{ notifications, user }}>

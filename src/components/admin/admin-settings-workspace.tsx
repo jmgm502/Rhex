@@ -15,10 +15,11 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { getAdminSettingsHref, getAdminSettingsSectionTabs } from "@/lib/admin-settings-navigation"
 import {
-  adminSettingsGroups,
+  getAdminSettingsGroups,
   getAdminSettingsGroupForSection,
   type AdminSettingsSectionKey,
 } from "@/lib/admin-navigation"
+import type { AdminManagementTier, AdminPermissionKey } from "@/lib/admin-permission-policy"
 import { cn } from "@/lib/utils"
 
 interface AdminSettingsWorkspaceProps {
@@ -26,6 +27,8 @@ interface AdminSettingsWorkspaceProps {
   currentSectionLabel: string
   currentSubTab?: string
   currentSubTabLabel?: string
+  adminTier?: AdminManagementTier
+  effectivePermissions?: AdminPermissionKey[]
   children: ReactNode
 }
 
@@ -34,10 +37,14 @@ export function AdminSettingsWorkspace({
   currentSectionLabel,
   currentSubTab,
   currentSubTabLabel,
+  adminTier,
+  effectivePermissions,
   children,
 }: AdminSettingsWorkspaceProps) {
   const activeGroup = getAdminSettingsGroupForSection(currentSection)
   const sectionTabs = getAdminSettingsSectionTabs(currentSection)
+  const effectivePermissionSet = effectivePermissions ? new Set(effectivePermissions) : undefined
+  const settingsGroups = getAdminSettingsGroups(adminTier, effectivePermissionSet)
 
   return (
     <div className="grid gap-6 xl:grid-cols-[220px_minmax(0,1fr)] 2xl:grid-cols-[240px_minmax(0,1fr)]">
@@ -46,7 +53,7 @@ export function AdminSettingsWorkspace({
         <Card>
 
           <CardContent className="space-y-4">
-            {adminSettingsGroups.map((group, groupIndex) => (
+            {settingsGroups.map((group, groupIndex) => (
               <div key={group.key} className="space-y-2">
                 {groupIndex > 0 ? <Separator /> : null}
                 <div className="flex items-center justify-between gap-2 pt-1">

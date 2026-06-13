@@ -5,8 +5,9 @@ import { AdminModuleSearch } from "@/components/admin/admin-module-search"
 import { AdminShell } from "@/components/admin/admin-shell"
 import type { ReactNode, ComponentType } from "react"
 
-import { requireAdminUser } from "@/lib/admin"
+import { getAdminActorPermissionState } from "@/lib/admin-page-auth"
 import { getHostAppBySlug } from "@/lib/apps"
+import type { AdminManagementTier } from "@/lib/admin-permission-policy"
 
 import { getGobangAppConfig, getSelfServeAdsAppConfig, getYinYangContractAppConfig } from "@/lib/app-config"
 import { AiReplyAdminPage } from "@/components/admin/ai-reply-admin-page"
@@ -41,6 +42,8 @@ function renderConfigPage(
 
 function renderAdminAppShell(params: {
   adminName: string
+  adminRole: "ADMIN" | "MODERATOR"
+  adminTier: AdminManagementTier
   appName: string
   appDescription?: string
   content: ReactNode
@@ -49,6 +52,8 @@ function renderAdminAppShell(params: {
     <AdminShell
       currentKey="apps"
       adminName={params.adminName}
+      adminRole={params.adminRole}
+      adminTier={params.adminTier}
       headerDescription={params.appDescription ?? `${params.appName} 的后台配置与管理入口。`}
       headerSearch={<AdminModuleSearch className="w-full" />}
       breadcrumbs={[
@@ -77,10 +82,14 @@ export async function generateMetadata(props: PageProps<"/admin/apps/[app]">): P
 
 export default async function AdminAppPage(props: PageProps<"/admin/apps/[app]">) {
   const params = await props.params
-  const admin = await requireAdminUser()
-  if (!admin) {
+  const auth = await getAdminActorPermissionState("admin.apps.manage")
+  if (!auth.actor) {
     redirect(`/login?redirect=/admin/apps/${params.app}`)
   }
+  if (!auth.authorized) {
+    redirect("/admin")
+  }
+  const { actor: admin, tier: adminTier } = auth
 
   const app = getHostAppBySlug(params.app)
   if (!app) {
@@ -120,6 +129,8 @@ export default async function AdminAppPage(props: PageProps<"/admin/apps/[app]">
 
   return renderAdminAppShell({
     adminName: admin.nickname ?? admin.username,
+    adminRole: admin.role,
+    adminTier,
     appName: app.name,
     appDescription: app.description,
     content,

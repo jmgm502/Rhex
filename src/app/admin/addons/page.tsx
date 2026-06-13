@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { AddonsHostAdminPage } from "@/components/admin/addons-host-admin-page"
 import { AdminShell } from "@/components/admin/admin-shell"
 import { getAddonsAdminData } from "@/addons-host/management"
-import { requireAdminUser } from "@/lib/admin"
+import { getAdminActorPermissionState } from "@/lib/admin-page-auth"
 import { getSiteSettings } from "@/lib/site-settings"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,10 +16,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AdminAddonsPage() {
-  const admin = await requireAdminUser()
-  if (!admin) {
+  const auth = await getAdminActorPermissionState("admin.addons.manage")
+  if (!auth.actor) {
     redirect("/login?redirect=/admin/addons")
   }
+  if (!auth.authorized) {
+    redirect("/admin")
+  }
+  const { actor: admin, tier: adminTier } = auth
 
   const data = await getAddonsAdminData()
 
@@ -27,6 +31,8 @@ export default async function AdminAddonsPage() {
     <AdminShell
       currentKey="apps"
       adminName={admin.nickname ?? admin.username}
+      adminRole={admin.role}
+      adminTier={adminTier}
       headerDescription="查看已安装的插件、页面、API、Provider、Hook 和挂载状态。"
       breadcrumbs={[
         { label: "后台控制台", href: "/admin" },

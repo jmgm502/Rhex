@@ -3,8 +3,6 @@
 import Link from "next/link"
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { MessageSquareMore } from "lucide-react"
-
 import { AddonSurfaceClientRenderer } from "@/addons-host/client/addon-surface-client-renderer"
 import { useInboxRealtime } from "@/components/inbox-realtime-provider"
 import { MessageConversationSidebar } from "@/components/message/message-conversation-sidebar"
@@ -747,13 +745,7 @@ export function MessagesClient({
           isMobileThreadVisible,
         }}
         fallback={(
-          <div className={isMobileThreadVisible ? "hidden sm:mb-4 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-3" : "mb-4 flex flex-wrap items-center justify-between gap-3"}>
-            <div>
-              <h1 className="mt-2 flex items-center gap-2 text-3xl font-semibold">
-                <MessageSquareMore className="h-7 w-7" />
-                站内私信
-              </h1>
-            </div>
+          <div>
           </div>
         )}
       />
@@ -861,7 +853,7 @@ export function MessagesClient({
   )
 
   return (
-    <main className="mx-auto max-w-[1240px] px-0 py-0 sm:px-4 sm:py-4 lg:px-5 lg:py-5">
+    <main className="mx-auto max-w-[1200px] px-0 py-0 sm:px-1 sm:py-4 lg:py-5">
       {pageBefore}
       <AddonSurfaceClientRenderer
         surface="messages.page"

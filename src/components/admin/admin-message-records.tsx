@@ -503,7 +503,7 @@ function EmptyState({ title, description, href }: { title: string; description: 
     <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
       <p className="text-sm font-medium">{title}</p>
       <p className="max-w-sm text-sm text-muted-foreground">{description}</p>
-      <Button variant="outline" size="sm" className="rounded-full" render={<Link href={href} />}>
+      <Button variant="outline" size="sm" className="rounded-full" nativeButton={false} render={<Link href={href} />}>
         <RotateCcw data-icon="inline-start" />
         重置筛选
       </Button>

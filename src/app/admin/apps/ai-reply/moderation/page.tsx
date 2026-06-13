@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { AdminModuleSearch } from "@/components/admin/admin-module-search"
 import { AdminShell } from "@/components/admin/admin-shell"
 import { AiReplyModerationPage } from "@/components/admin/ai-reply-moderation-page"
-import { requireAdminUser } from "@/lib/admin"
+import { getAdminActorPermissionState } from "@/lib/admin-page-auth"
 import { getSiteSettings } from "@/lib/site-settings"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,15 +15,21 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AiReplyModerationAdminPage() {
-  const admin = await requireAdminUser()
-  if (!admin) {
+  const auth = await getAdminActorPermissionState("admin.apps.manage")
+  if (!auth.actor) {
     redirect("/login?redirect=/admin/apps/ai-reply/moderation")
   }
+  if (!auth.authorized) {
+    redirect("/admin")
+  }
+  const { actor: admin, tier: adminTier } = auth
 
   return (
     <AdminShell
       currentKey="apps"
       adminName={admin.nickname ?? admin.username}
+      adminRole={admin.role}
+      adminTier={adminTier}
       headerDescription="审核 AI 生成的板块与标签修正建议。"
       headerSearch={<AdminModuleSearch className="w-full" />}
       breadcrumbs={[

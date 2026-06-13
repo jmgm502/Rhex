@@ -28,6 +28,7 @@ export const GET = createAdminRouteHandler<unknown>(async ({ request }) => {
   errorMessage: "RSS 收录申请加载失败",
   logPrefix: "[api/admin/apps/rss-harvest/applications:GET] unexpected error",
   unauthorizedMessage: "无权访问",
+  permission: "admin.apps.manage",
 })
 
 export const POST = createAdminRouteHandler(async ({ request, adminUser }) => {
@@ -63,4 +64,5 @@ export const POST = createAdminRouteHandler(async ({ request, adminUser }) => {
   errorMessage: "RSS 收录申请操作失败",
   logPrefix: "[api/admin/apps/rss-harvest/applications:POST] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })

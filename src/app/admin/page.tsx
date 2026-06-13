@@ -26,11 +26,13 @@ import { getVerificationAdminData, getVerificationTypeOptions } from "@/lib/admi
 import {
   adminTabs,
   adminTabLabels,
+  getDefaultAdminSettingsSection,
   getAdminNavigationItem,
-  getAllowedAdminTabs,
+  getAllowedAdminTabsByPermission,
   type AdminTabKey,
   type AdminVerificationSubTabKey,
 } from "@/lib/admin-navigation"
+import { resolveAdminPermissionState } from "@/lib/admin-permission-overrides"
 import { resolveAdminSettingsRoute } from "@/lib/admin-settings-navigation"
 import { isLocalPostType } from "@/lib/post-types"
 
@@ -38,6 +40,7 @@ import { getAdminLogCenter } from "@/lib/admin-logs"
 import { getAdminMessages } from "@/lib/admin-messages"
 import { getAdminAttachmentManagement } from "@/lib/admin-attachments"
 import { getAdminUsers } from "@/lib/admin-users"
+import { isFounderAdmin } from "@/lib/admin-founder"
 import { getAllBadges, type BadgeEffectRuleItem, type BadgeItem, type BadgeRuleItem } from "@/lib/badges"
 import { getLevelDefinitions } from "@/lib/level-system"
 import { minuteOfDayToTimeInput } from "@/lib/point-effect-definitions"
@@ -67,7 +70,14 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     redirect("/login?redirect=/admin")
   }
 
-  const allowedTabs = getAllowedAdminTabs(admin.role)
+  const actorIsFounder = admin.role === "ADMIN" ? await isFounderAdmin(admin.id) : false
+  const permissionState = await resolveAdminPermissionState(admin)
+  const adminTier = permissionState.tier
+  const effectivePermissionSet = new Set(permissionState.effectivePermissions)
+  const allowedTabs = getAllowedAdminTabsByPermission(adminTier, effectivePermissionSet)
+  if (allowedTabs.length === 0) {
+    redirect("/")
+  }
   const currentTabValue = readSearchParam(searchParams?.tab)
   const requestedTab: AdminTabKey = adminTabs.includes((currentTabValue as AdminTabKey) ?? "overview")
     ? ((currentTabValue as AdminTabKey) ?? "overview")
@@ -80,10 +90,11 @@ export default async function AdminPage(props: PageProps<"/admin">) {
   const currentVerificationSubTabValue = readSearchParam(searchParams?.verificationSubTab)
   const currentVerificationSubTab: AdminVerificationSubTabKey = currentVerificationSubTabValue === "reviews" ? "reviews" : "types"
 
-  if (tab === "settings" && admin.role === "ADMIN") {
+  if (tab === "settings" && effectivePermissionSet.has("admin.operations.manage")) {
+    const defaultSettingsSection = getDefaultAdminSettingsSection(adminTier, effectivePermissionSet)
     redirect(
       resolveAdminSettingsRoute({
-        section: readSearchParam(searchParams?.section),
+        section: readSearchParam(searchParams?.section) ?? defaultSettingsSection,
         subTab: readSearchParam(searchParams?.subTab),
       })?.href ?? "/admin/settings/profile/branding"
     )
@@ -144,15 +155,21 @@ export default async function AdminPage(props: PageProps<"/admin">) {
   const currentAttachmentReferenceStatus = readSearchParam(searchParams?.attachmentReferenceStatus) ?? "ALL"
   const currentAttachmentPage = readSearchParam(searchParams?.attachmentPage) ?? "1"
   const currentAttachmentPageSize = readSearchParam(searchParams?.attachmentPageSize) ?? "20"
+  const actorCanDemoteAdmins = actorIsFounder && tab === "users"
+  const canManageUsers = effectivePermissionSet.has("admin.users.manage")
+  const canManageOperations = effectivePermissionSet.has("admin.operations.manage")
+  const canViewLogs = effectivePermissionSet.has("admin.logs.view")
+  const canGrantBadges = effectivePermissionSet.has("admin.users.grantBadges")
+  const canGrantVerifications = effectivePermissionSet.has("admin.users.grantVerifications")
 
   const [dashboardData, structureData, adminUsers, filteredPosts, filteredComments, adminMessages, levelDefinitions, badges, badgeVerificationTypes, announcements, customPages, reports, attachments, sensitiveWordResult, logCenter, verificationAdminData] = await Promise.all([
-    admin.role === "ADMIN" && tab === "overview"
+    effectivePermissionSet.has("admin.overview.view") && tab === "overview"
       ? getAdminDashboardData()
       : Promise.resolve<Awaited<ReturnType<typeof getAdminDashboardData>> | null>(null),
     tab === "structure" || tab === "board-applications"
       ? getAdminStructureData()
       : Promise.resolve<Awaited<ReturnType<typeof getAdminStructureData>> | null>(null),
-    admin.role === "ADMIN" && tab === "users"
+    canManageUsers && tab === "users"
       ? getAdminUsers({
         keyword: currentUserKeyword || undefined,
         role: currentUserRole,
@@ -190,7 +207,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
         pageSize: Number(currentCommentPageSize),
       })
       : Promise.resolve<Awaited<ReturnType<typeof getAdminComments>> | null>(null),
-    admin.role === "ADMIN" && tab === "messages"
+    canManageOperations && tab === "messages"
       ? getAdminMessages({
         keyword: currentMessageKeyword || undefined,
         sort: currentMessageSort,
@@ -201,17 +218,17 @@ export default async function AdminPage(props: PageProps<"/admin">) {
         conversationId: currentMessageConversationId || undefined,
       })
       : Promise.resolve<Awaited<ReturnType<typeof getAdminMessages>> | null>(null),
-    admin.role === "ADMIN" && (tab === "levels" || tab === "badges")
+    canManageOperations && (tab === "levels" || tab === "badges")
       ? getLevelDefinitions()
       : Promise.resolve<Awaited<ReturnType<typeof getLevelDefinitions>>>([]),
-    admin.role === "ADMIN" && tab === "badges" ? getAllBadges() : Promise.resolve<Awaited<ReturnType<typeof getAllBadges>>>([]),
-    admin.role === "ADMIN" && tab === "badges" ? getVerificationTypeOptions() : Promise.resolve<Awaited<ReturnType<typeof getVerificationTypeOptions>>>([]),
-    admin.role === "ADMIN" && tab === "announcements" ? getAdminAnnouncementList() : Promise.resolve<Awaited<ReturnType<typeof getAdminAnnouncementList>>>([]),
-    admin.role === "ADMIN" && tab === "custom-pages" ? getAdminCustomPageList() : Promise.resolve<Awaited<ReturnType<typeof getAdminCustomPageList>>>([]),
-    admin.role === "ADMIN" && tab === "reports"
+    canGrantBadges && tab === "badges" ? getAllBadges() : Promise.resolve<Awaited<ReturnType<typeof getAllBadges>>>([]),
+    canGrantBadges && tab === "badges" ? getVerificationTypeOptions() : Promise.resolve<Awaited<ReturnType<typeof getVerificationTypeOptions>>>([]),
+    canManageOperations && tab === "announcements" ? getAdminAnnouncementList() : Promise.resolve<Awaited<ReturnType<typeof getAdminAnnouncementList>>>([]),
+    canManageOperations && tab === "custom-pages" ? getAdminCustomPageList() : Promise.resolve<Awaited<ReturnType<typeof getAdminCustomPageList>>>([]),
+    canManageOperations && tab === "reports"
       ? getAdminReports({ page: Number(currentReportPage), pageSize: Number(currentReportPageSize) })
       : Promise.resolve<Awaited<ReturnType<typeof getAdminReports>> | null>(null),
-    admin.role === "ADMIN" && tab === "attachments"
+    canManageOperations && tab === "attachments"
       ? getAdminAttachmentManagement({
         keyword: currentAttachmentKeyword || undefined,
         bucketType: currentAttachmentBucketType,
@@ -220,10 +237,10 @@ export default async function AdminPage(props: PageProps<"/admin">) {
         pageSize: Number(currentAttachmentPageSize),
       })
       : Promise.resolve<Awaited<ReturnType<typeof getAdminAttachmentManagement>> | null>(null),
-    admin.role === "ADMIN" && tab === "security"
+    canManageOperations && tab === "security"
       ? getSensitiveWordPage({ page: Number(currentSecurityPage), pageSize: Number(currentSecurityPageSize) })
       : Promise.resolve<Awaited<ReturnType<typeof getSensitiveWordPage>> | null>(null),
-    admin.role === "ADMIN" && tab === "logs"
+    canViewLogs && tab === "logs"
       ? getAdminLogCenter({
         activeTab: currentLogSubTab,
         keyword: currentLogKeyword,
@@ -234,7 +251,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
         pageSize: Number(currentLogPageSize),
       })
       : Promise.resolve<Awaited<ReturnType<typeof getAdminLogCenter>> | null>(null),
-    admin.role === "ADMIN" && tab === "verifications"
+    canGrantVerifications && tab === "verifications"
       ? getVerificationAdminData()
       : Promise.resolve<Awaited<ReturnType<typeof getVerificationAdminData>> | null>(null),
   ])
@@ -244,13 +261,15 @@ export default async function AdminPage(props: PageProps<"/admin">) {
       currentKey={tab}
       adminName={admin.nickname ?? admin.username}
       adminRole={admin.role}
+      adminTier={adminTier}
+      effectivePermissions={permissionState.effectivePermissions}
       headerDescription={getAdminNavigationItem(tab).description}
       headerSearch={<AdminModuleSearch className="w-full" />}
     >
       <div className="space-y-6">
         {tab === "overview" ? <AdminOverviewDashboard data={dashboardData!} /> : null}
 
-        {admin.role === "ADMIN" && tab === "verifications" ? (
+        {canGrantVerifications && tab === "verifications" ? (
           <div className="rounded-xl border border-border bg-card p-3">
             <AdminPillTabs
               items={[
@@ -263,7 +282,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
           </div>
         ) : null}
 
-        {tab === "users" ? <AdminUserList data={adminUsers!} /> : null}
+        {tab === "users" ? <AdminUserList data={adminUsers!} actorUserId={admin.id} actorCanDemoteAdmins={actorCanDemoteAdmins} /> : null}
         {tab === "posts" ? <AdminPostList data={filteredPosts!} /> : null}
         {tab === "comments" ? <AdminCommentList data={filteredComments!} /> : null}
         {tab === "messages" ? <AdminMessageRecords data={adminMessages!} /> : null}

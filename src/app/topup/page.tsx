@@ -41,7 +41,7 @@ export default async function TopupPage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="mx-auto max-w-[1040px] px-4 py-8">
+      <main className="mx-auto max-w-[1200px] px-1 py-8">
         <div className="space-y-6">
           <AddonSlotRenderer slot="topup.page.before" />
           <AddonSurfaceRenderer surface="topup.page" props={{ currentUser, initialRuntimeClientType, pointTopup, settings }}>

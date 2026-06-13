@@ -5,6 +5,7 @@ import { UserRole } from "@/db/types"
 import { ContentSafetyError } from "@/lib/content-safety"
 import type { SessionActor } from "@/db/session-actor-queries"
 import { PublicRouteError, isPublicRouteError } from "@/lib/public-route-error"
+import type { AdminPermissionKey } from "@/lib/admin-permission-policy"
 
 type AdminRouteActor = {
   id: number
@@ -261,19 +262,34 @@ export function createUserRouteHandler<T = unknown>(
 
 export function createAdminRouteHandler<T = unknown>(
   handler: ApiRouteHandler<T, AdminApiRouteContext>,
-  options?: { errorMessage?: string; logPrefix?: string; unauthorizedMessage?: string; allowModerator?: boolean },
+  options?: {
+    errorMessage?: string
+    logPrefix?: string
+    unauthorizedMessage?: string
+    allowModerator?: boolean
+    permission?: AdminPermissionKey
+  },
 ) {
   return createRouteHandler(handler, {
     errorMessage: options?.errorMessage,
     logPrefix: options?.logPrefix,
     buildContext: async (request, routeContext) => {
       const { requireAdminActor, requireSiteAdminActor } = await import("@/lib/moderator-permissions")
+      const { isFounderAdmin } = await import("@/lib/admin-founder")
+      const { canAdminWithPermissionOverrides } = await import("@/lib/admin-permission-overrides")
       const adminUser = options?.allowModerator
         ? await requireAdminActor()
         : await requireSiteAdminActor()
 
       if (!adminUser || (adminUser.role !== UserRole.ADMIN && (!options?.allowModerator || adminUser.role !== UserRole.MODERATOR))) {
         apiError(403, options?.unauthorizedMessage ?? "无权操作")
+      }
+
+      if (options?.permission) {
+        const actorIsFounder = adminUser.role === UserRole.ADMIN ? await isFounderAdmin(adminUser.id) : false
+        if (!await canAdminWithPermissionOverrides(adminUser, options.permission, { isFounder: actorIsFounder })) {
+          apiError(403, options.unauthorizedMessage ?? "无权操作")
+        }
       }
 
       return { request, adminUser, routeContext }

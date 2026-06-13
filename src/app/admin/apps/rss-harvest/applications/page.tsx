@@ -6,7 +6,7 @@ import { AdminModuleSearch } from "@/components/admin/admin-module-search"
 import { AdminShell } from "@/components/admin/admin-shell"
 import { RssSourceApplicationAdminPage } from "@/components/admin/rss-source-application-admin-page"
 import { Button } from "@/components/ui/rbutton"
-import { requireAdminUser } from "@/lib/admin"
+import { getAdminActorPermissionState } from "@/lib/admin-page-auth"
 import { getRssSourceApplicationAdminPageData } from "@/lib/rss-source-application-admin"
 import { getSiteSettings } from "@/lib/site-settings"
 
@@ -23,10 +23,14 @@ export async function generateMetadata(props: { searchParams: Promise<Record<str
 }
 
 export default async function RssHarvestApplicationsPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const admin = await requireAdminUser()
-  if (!admin) {
+  const auth = await getAdminActorPermissionState("admin.apps.manage")
+  if (!auth.actor) {
     redirect("/login?redirect=/admin/apps/rss-harvest/applications")
   }
+  if (!auth.authorized) {
+    redirect("/admin")
+  }
+  const { actor: admin, tier: adminTier } = auth
 
   const searchParams = await props.searchParams
   const data = await getRssSourceApplicationAdminPageData({
@@ -40,6 +44,8 @@ export default async function RssHarvestApplicationsPage(props: { searchParams: 
     <AdminShell
       currentKey="apps"
       adminName={admin.nickname ?? admin.username}
+      adminRole={admin.role}
+      adminTier={adminTier}
       headerDescription="审核用户提交的 RSS 源收录申请。"
       headerSearch={<AdminModuleSearch className="w-full" />}
       breadcrumbs={[

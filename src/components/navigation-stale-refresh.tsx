@@ -3,13 +3,11 @@
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useRef } from "react"
 
-const MUTATION_MARKER_KEY = "rhex:content-mutated-at"
-
-function readMutationMarker() {
-  const raw = window.sessionStorage.getItem(MUTATION_MARKER_KEY)
-  const value = raw ? Number(raw) : 0
-  return Number.isFinite(value) ? value : 0
-}
+import {
+  consumeContentMutationRefresh,
+  readContentMutationMarker,
+  readContentMutationRefreshMarker,
+} from "@/lib/content-mutation-marker.client"
 
 export function NavigationStaleRefresh() {
   const router = useRouter()
@@ -17,13 +15,21 @@ export function NavigationStaleRefresh() {
   const handledMarkersByPathRef = useRef(new Map<string, number>())
 
   useEffect(() => {
-    const marker = readMutationMarker()
+    const marker = readContentMutationMarker()
     if (!marker) {
       return
     }
 
-    const handledMarker = handledMarkersByPathRef.current.get(pathname) ?? 0
+    const handledMarker = Math.max(
+      handledMarkersByPathRef.current.get(pathname) ?? 0,
+      readContentMutationRefreshMarker(pathname),
+    )
     if (handledMarker === marker) {
+      return
+    }
+
+    const consumedMarker = consumeContentMutationRefresh(pathname)
+    if (!consumedMarker) {
       return
     }
 
@@ -33,10 +39,18 @@ export function NavigationStaleRefresh() {
 
   useEffect(() => {
     function refreshIfNeeded(force = false) {
-      const marker = readMutationMarker()
       const currentPath = window.location.pathname
-      const handledMarker = handledMarkersByPathRef.current.get(currentPath) ?? 0
+      const marker = readContentMutationMarker()
+      const handledMarker = Math.max(
+        handledMarkersByPathRef.current.get(currentPath) ?? 0,
+        readContentMutationRefreshMarker(currentPath),
+      )
       if (!marker || (!force && marker === handledMarker)) {
+        return
+      }
+
+      const consumedMarker = consumeContentMutationRefresh(currentPath, { force })
+      if (!consumedMarker) {
         return
       }
 

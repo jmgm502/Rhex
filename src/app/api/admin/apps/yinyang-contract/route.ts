@@ -17,4 +17,5 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "阴阳契配置保存失败",
   logPrefix: "[api/admin/apps/yinyang-contract] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })

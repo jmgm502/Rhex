@@ -84,6 +84,7 @@ export function findAdminCommentsPage(where: Prisma.CommentWhereInput, orderBy: 
           id: true,
           username: true,
           nickname: true,
+          avatarPath: true,
         },
       },
       reviewer: {

@@ -10,7 +10,7 @@ import { AdminShell } from "@/components/admin/admin-shell"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getAddonAdminDetailData, getAddonAdminItem } from "@/addons-host/management"
-import { requireAdminUser } from "@/lib/admin"
+import { getAdminActorPermissionState } from "@/lib/admin-page-auth"
 import { getSiteSettings } from "@/lib/site-settings"
 
 interface AdminAddonPageProps {
@@ -30,13 +30,17 @@ export async function generateMetadata({ params }: AdminAddonPageProps): Promise
 }
 
 export default async function AdminAddonDetailPage({ params }: AdminAddonPageProps) {
-  const admin = await requireAdminUser()
-  if (!admin) {
-    const resolved = await params
+  const resolved = await params
+  const auth = await getAdminActorPermissionState("admin.addons.manage")
+  if (!auth.actor) {
     redirect(`/login?redirect=/admin/addons/${resolved.addonId}`)
   }
+  if (!auth.authorized) {
+    redirect("/admin")
+  }
+  const { actor: admin, tier: adminTier } = auth
 
-  const { addonId, slug } = await params
+  const { addonId, slug } = resolved
   const addonAdminDetail = await getAddonAdminDetailData(addonId)
   if (!addonAdminDetail) {
     notFound()
@@ -95,6 +99,8 @@ export default async function AdminAddonDetailPage({ params }: AdminAddonPagePro
     <AdminShell
       currentKey="apps"
       adminName={admin.nickname ?? admin.username}
+      adminRole={admin.role}
+      adminTier={adminTier}
       headerDescription={addon.manifest.description || "插件管理页面"}
       breadcrumbs={[
         { label: "后台控制台", href: "/admin" },

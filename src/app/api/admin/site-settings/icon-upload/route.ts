@@ -84,4 +84,5 @@ export const POST = createAdminRouteHandler(async ({ request, adminUser }) => {
   errorMessage: "上传站点图标失败",
   logPrefix: "[api/admin/site-settings/icon-upload] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.siteSettings.manage",
 })

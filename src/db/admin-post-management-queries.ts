@@ -81,7 +81,7 @@ export function findAdminPostsPage(where: Prisma.PostWhereInput, orderBy: Prisma
     take,
     include: {
       board: { select: { name: true, slug: true, zone: { select: { name: true } } } },
-      author: { select: { id: true, username: true, nickname: true, status: true } },
+      author: { select: { id: true, username: true, nickname: true, avatarPath: true, status: true } },
     },
   })
 }

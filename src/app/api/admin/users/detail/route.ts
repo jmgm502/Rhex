@@ -15,4 +15,6 @@ export const GET = createAdminRouteHandler(async ({ request }) => {
 }, {
   errorMessage: "加载用户详情失败",
   logPrefix: "[api/admin/users/detail] unexpected error",
+  unauthorizedMessage: "无权访问用户详情",
+  permission: "admin.users.manage",
 })

@@ -1,4 +1,4 @@
-import { BoardStatus, CommentStatus, PostStatus, UserRole } from "@/db/types"
+import { BoardStatus, CommentStatus, PostStatus } from "@/db/types"
 
 import { getAdminDashboardRawData, getAdminStructureRawData } from "@/db/admin-dashboard-queries"
 import type { StructureModeratorItem } from "@/lib/admin-structure-management"
@@ -10,6 +10,7 @@ import {
   canEditZoneSettings,
   type AdminActor,
 } from "@/lib/moderator-permissions"
+import { canAdmin, type AdminPermissionGrantInput } from "@/lib/admin-permission-policy"
 import { getPostStatusLabel, getPostTypeLabel } from "@/lib/post-types"
 import { getUserDisplayName } from "@/lib/user-display"
 
@@ -308,7 +309,11 @@ export function mapAdminDashboardData(data: AdminDashboardRawData): AdminDashboa
   }
 }
 
-export function mapAdminStructureData(data: AdminStructureRawData, actor: AdminActor): AdminStructureData {
+export function mapAdminStructureData(
+  data: AdminStructureRawData,
+  actor: AdminActor,
+  options: { isFounder?: boolean; grants?: Iterable<AdminPermissionGrantInput> } = {},
+): AdminStructureData {
   const boardsByZoneId = new Map<string, Array<(typeof data.boards)[number]>>()
   for (const board of data.boards) {
     if (!board.zoneId) {
@@ -437,10 +442,10 @@ export function mapAdminStructureData(data: AdminStructureRawData, actor: AdminA
       }
     }),
     permissions: {
-      canCreateZone: actor.role === UserRole.ADMIN,
-      canCreateBoard: actor.role === UserRole.ADMIN,
-      canDeleteZone: actor.role === UserRole.ADMIN,
-      canDeleteBoard: actor.role === UserRole.ADMIN,
+      canCreateZone: canAdmin(actor, "admin.structure.create", { isFounder: options.isFounder, grants: options.grants }),
+      canCreateBoard: canAdmin(actor, "admin.structure.create", { isFounder: options.isFounder, grants: options.grants }),
+      canDeleteZone: canAdmin(actor, "admin.structure.delete", { isFounder: options.isFounder, grants: options.grants }),
+      canDeleteBoard: canAdmin(actor, "admin.structure.delete", { isFounder: options.isFounder, grants: options.grants }),
     },
     verificationTypes: data.verificationTypes.map((item) => ({
       id: item.id,

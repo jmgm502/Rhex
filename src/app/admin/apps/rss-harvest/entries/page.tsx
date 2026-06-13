@@ -6,7 +6,7 @@ import { AdminModuleSearch } from "@/components/admin/admin-module-search"
 import { RssEntryAdminPage } from "@/components/admin/rss-entry-admin-page"
 import { AdminShell } from "@/components/admin/admin-shell"
 import { Button } from "@/components/ui/rbutton"
-import { requireAdminUser } from "@/lib/admin"
+import { getAdminActorPermissionState } from "@/lib/admin-page-auth"
 import { getRssEntryAdminPageData } from "@/lib/rss-entry-admin"
 import { getSiteSettings } from "@/lib/site-settings"
 
@@ -23,10 +23,14 @@ export async function generateMetadata(props: { searchParams: Promise<Record<str
 }
 
 export default async function RssHarvestEntriesPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const admin = await requireAdminUser()
-  if (!admin) {
+  const auth = await getAdminActorPermissionState("admin.apps.manage")
+  if (!auth.actor) {
     redirect("/login?redirect=/admin/apps/rss-harvest/entries")
   }
+  if (!auth.authorized) {
+    redirect("/admin")
+  }
+  const { actor: admin, tier: adminTier } = auth
 
   const searchParams = await props.searchParams
   const data = await getRssEntryAdminPageData({
@@ -41,6 +45,8 @@ export default async function RssHarvestEntriesPage(props: { searchParams: Promi
     <AdminShell
       currentKey="apps"
       adminName={admin.nickname ?? admin.username}
+      adminRole={admin.role}
+      adminTier={adminTier}
       headerDescription="查看 RSS 入库内容，执行审核、编辑和批量处理。"
       headerSearch={<AdminModuleSearch className="w-full" />}
       breadcrumbs={[

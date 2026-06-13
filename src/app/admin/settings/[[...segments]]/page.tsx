@@ -24,7 +24,12 @@ import {
   getDefaultAdminSettingsHref,
   resolveAdminSettingsRouteFromSegments,
 } from "@/lib/admin-settings-navigation"
-import { sectionsRequiringSiteSettings } from "@/lib/admin-navigation"
+import {
+  canAccessAdminSettingsSection,
+  getDefaultAdminSettingsSection,
+  sectionsRequiringSiteSettings,
+} from "@/lib/admin-navigation"
+import { resolveAdminPermissionState } from "@/lib/admin-permission-overrides"
 import { getAdminFriendLinkPageData } from "@/lib/friend-links"
 import { getServerSiteSettings } from "@/lib/site-settings"
 import { requireAdminActor } from "@/lib/moderator-permissions"
@@ -64,13 +69,22 @@ export default async function AdminSettingsPage(
     redirect(`/login?redirect=${currentPath}`)
   }
 
-  if (admin.role !== "ADMIN") {
+  const permissionState = await resolveAdminPermissionState(admin)
+  const adminTier = permissionState.tier
+  const effectivePermissionSet = new Set(permissionState.effectivePermissions)
+
+  if (!effectivePermissionSet.has("admin.operations.manage") && !effectivePermissionSet.has("admin.siteSettings.manage")) {
     redirect("/admin")
   }
 
   const resolved = resolveAdminSettingsRouteFromSegments(params.segments)
   if (!resolved) {
     notFound()
+  }
+
+  if (!canAccessAdminSettingsSection(adminTier, resolved.section, effectivePermissionSet)) {
+    const defaultSection = getDefaultAdminSettingsSection(adminTier, effectivePermissionSet)
+    redirect(defaultSection ? getAdminSettingsHref(defaultSection) : "/admin")
   }
 
   if (currentPath !== resolved.href) {
@@ -111,9 +125,10 @@ export default async function AdminSettingsPage(
 
   const uploadLevelOptions = buildUserLevelThresholdOptions(levelDefinitions)
   const uploadVipLevelOptions = buildVipLevelThresholdOptions()
+  const defaultSettingsSection = getDefaultAdminSettingsSection(adminTier, effectivePermissionSet)
   const breadcrumbs: Array<{ label: string; href?: string }> = [
     { label: "后台控制台", href: "/admin" },
-    { label: "站点设置", href: getDefaultAdminSettingsHref() },
+    { label: "站点设置", href: defaultSettingsSection ? getAdminSettingsHref(defaultSettingsSection) : getDefaultAdminSettingsHref() },
     { label: resolved.sectionLabel, href: getAdminSettingsHref(resolved.section) },
   ]
 
@@ -126,6 +141,8 @@ export default async function AdminSettingsPage(
       currentKey={resolved.section === "vip" && resolved.subTab === "tasks" ? "tasks" : "settings"}
       adminName={admin.nickname ?? admin.username}
       adminRole={admin.role}
+      adminTier={adminTier}
+      effectivePermissions={permissionState.effectivePermissions}
       headerDescription={resolved.subTabLabel ?? resolved.sectionLabel}
       headerSearch={<AdminModuleSearch className="w-full" />}
       breadcrumbs={breadcrumbs}
@@ -135,6 +152,8 @@ export default async function AdminSettingsPage(
         currentSectionLabel={resolved.sectionLabel}
         currentSubTab={resolved.subTab}
         currentSubTabLabel={resolved.subTabLabel}
+        adminTier={adminTier}
+        effectivePermissions={permissionState.effectivePermissions}
       >
         {resolved.section === "profile" ? (
           <AdminBasicSettingsForm

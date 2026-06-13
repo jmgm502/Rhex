@@ -4,7 +4,7 @@ import Image from "next/image"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 
-import { Loader2, Plus, Upload } from "lucide-react"
+import { Loader2, Plus, Trash2, Upload } from "lucide-react"
 
 import {
   SettingsInputField,
@@ -186,6 +186,32 @@ export function AdminFriendLinksSettingsForm({ initialSettings, items, pendingCo
     })
   }
 
+  function deleteFriendLink(id: string, name: string) {
+    if (!window.confirm(`确定删除友情链接「${name}」吗？此操作不可恢复。`)) {
+      return
+    }
+
+    startTransition(async () => {
+      const response = await fetch("/api/admin/friend-links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          action: "delete",
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        toast.error(result.message ?? "删除友情链接失败", "删除失败")
+        return
+      }
+
+      toast.success(result.message ?? "友情链接已删除", "删除成功")
+      setEditingId((current) => current === id ? null : current)
+      router.refresh()
+    })
+  }
+
   return (
     <div className="space-y-4">
       <form onSubmit={submitSettings} className="space-y-4">
@@ -261,6 +287,10 @@ export function AdminFriendLinksSettingsForm({ initialSettings, items, pendingCo
                     {item.status === "APPROVED" ? (
                       <Button type="button" variant="ghost" className="h-8 rounded-full px-3 text-xs" disabled={isPending} onClick={() => submitReview(item.id, "disable")}>停用</Button>
                     ) : null}
+                    <Button type="button" variant="ghost" className="h-8 rounded-full px-3 text-xs text-destructive hover:text-destructive" disabled={isPending} onClick={() => deleteFriendLink(item.id, item.name)}>
+                      <Trash2 className="mr-1 h-3.5 w-3.5" />
+                      删除
+                    </Button>
                   </div>
                 </div>
 

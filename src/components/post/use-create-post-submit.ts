@@ -10,6 +10,7 @@ import { getPostPath } from "@/lib/post-links"
 import { collectAddonFormFieldsFromFormData } from "@/lib/addon-form-fields"
 import { toast } from "@/components/ui/toast"
 import { buildSubmitRequest } from "@/components/post/create-post-form.shared"
+import { markContentMutated } from "@/lib/content-mutation-marker.client"
 
 interface UseCreatePostSubmitOptions {
   mode: "create" | "edit"
@@ -112,9 +113,8 @@ export function useCreatePostSubmit({
 
       if (typeof window !== "undefined") {
         if (targetPath) {
-          window.sessionStorage.setItem("rhex:content-mutated-at", String(Date.now()))
+          markContentMutated()
           router.push(targetPath)
-          router.refresh()
           return
         }
 

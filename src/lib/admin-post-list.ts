@@ -139,6 +139,7 @@ export function mapAdminPostListItem(post: AdminPostPageRecord): AdminPostListIt
     authorId: post.author.id,
     authorName: post.author.nickname ?? post.author.username,
     authorUsername: post.author.username,
+    authorAvatarPath: post.author.avatarPath ?? null,
     authorStatus: post.author.status,
     createdAt: post.createdAt.toISOString(),
     publishedAt: post.publishedAt?.toISOString() ?? null,

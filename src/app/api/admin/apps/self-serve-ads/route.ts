@@ -22,6 +22,7 @@ export const GET = createAdminRouteHandler(async () => {
   errorMessage: "广告后台数据加载失败",
   logPrefix: "[api/admin/apps/self-serve-ads:GET] unexpected error",
   unauthorizedMessage: "无权访问",
+  permission: "admin.apps.manage",
 })
 
 export const POST = createAdminRouteHandler(async ({ request }) => {
@@ -57,4 +58,5 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "广告订单更新失败",
   logPrefix: "[api/admin/apps/self-serve-ads:POST] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })

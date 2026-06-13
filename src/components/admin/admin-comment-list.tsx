@@ -24,7 +24,6 @@ import {
 import { useMemo, useState, useTransition } from "react"
 
 import { AdminPostActionButton } from "@/components/admin/admin-post-action-button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { showConfirm } from "@/components/ui/alert-dialog"
@@ -54,8 +53,9 @@ import {
 } from "@/components/ui/table"
 import { Tooltip } from "@/components/ui/tooltip"
 import { toast } from "@/components/ui/toast"
+import { UserAvatar } from "@/components/user/user-avatar"
+import { formatAdminCommentPreview } from "@/lib/admin-comment-preview"
 import type { AdminCommentListItem, AdminCommentListResult } from "@/lib/admin-comment-management"
-import { getAvatarFallback } from "@/lib/avatar"
 import { formatDateTime, formatMonthDayTime, formatNumber } from "@/lib/formatters"
 import { getPostCommentPath } from "@/lib/post-links"
 import { cn } from "@/lib/utils"
@@ -397,12 +397,12 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
                 </Button>
               ) : null}
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" size="sm" className="rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("comment.approve", "批量通过评论", `确认通过已选中的 ${selectedCount} 条评论吗？`, "批量通过")}>批量通过</Button>
-              <Button type="button" variant="outline" size="sm" className="rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("comment.show", "批量恢复评论", `确认恢复已选中的 ${selectedCount} 条评论吗？`, "批量恢复")}>批量恢复</Button>
-              <Button type="button" variant="outline" size="sm" className="rounded-full border-rose-200 px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("comment.reject", "批量驳回评论", `确认驳回已选中的 ${selectedCount} 条评论吗？驳回后将下线评论。`, "批量驳回", true)}>批量驳回</Button>
-              <Button type="button" variant="outline" size="sm" className="rounded-full border-rose-200 px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("comment.hide", "批量隐藏评论", `确认隐藏已选中的 ${selectedCount} 条评论吗？隐藏后前台不再展示。`, "批量隐藏", true)}>批量隐藏</Button>
-              <Button type="button" variant="outline" size="sm" className="rounded-full border-rose-200 px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("comment.delete", "批量删除评论", `确认删除已选中的 ${selectedCount} 条评论吗？此操作不可撤销。`, "批量删除", true)}>批量删除</Button>
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+              <Button type="button" variant="outline" size="sm" className="min-h-9 rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("comment.approve", "批量通过评论", `确认通过已选中的 ${selectedCount} 条评论吗？`, "批量通过")}>批量通过</Button>
+              <Button type="button" variant="outline" size="sm" className="min-h-9 rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("comment.show", "批量恢复评论", `确认恢复已选中的 ${selectedCount} 条评论吗？`, "批量恢复")}>批量恢复</Button>
+              <Button type="button" variant="outline" size="sm" className="min-h-9 rounded-full border-rose-200 px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("comment.reject", "批量驳回评论", `确认驳回已选中的 ${selectedCount} 条评论吗？驳回后将下线评论。`, "批量驳回", true)}>批量驳回</Button>
+              <Button type="button" variant="outline" size="sm" className="min-h-9 rounded-full border-rose-200 px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("comment.hide", "批量隐藏评论", `确认隐藏已选中的 ${selectedCount} 条评论吗？隐藏后前台不再展示。`, "批量隐藏", true)}>批量隐藏</Button>
+              <Button type="button" variant="outline" size="sm" className="min-h-9 rounded-full border-rose-200 px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 sm:col-auto" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("comment.delete", "批量删除评论", `确认删除已选中的 ${selectedCount} 条评论吗？此操作不可撤销。`, "批量删除", true)}>批量删除</Button>
             </div>
           </div>
         ) : null}
@@ -424,64 +424,78 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
               <OverviewActionLink href="/admin?tab=comments" label="重置筛选" />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[52px]">
-                    <Checkbox
-                      checked={allCurrentPageSelected || someCurrentPageSelected}
-                      onCheckedChange={(checked) => toggleSelectCurrentPage(checked === true)}
-                      aria-label="全选本页评论"
-                    />
-                  </TableHead>
-                  <TableHead>评论</TableHead>
-                  <TableHead className="w-[220px]">帖子</TableHead>
-                  <TableHead className="w-[150px]">作者</TableHead>
-                  <TableHead className="w-[120px]">状态</TableHead>
-                  <TableHead className="w-[200px]">审核</TableHead>
-                  <TableHead className="w-[90px]">点赞</TableHead>
-                  <TableHead className="w-[120px]">更新时间</TableHead>
-                  <TableHead className="w-[220px] text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              <div className="flex flex-col gap-3 p-3 md:hidden">
                 {data.comments.map((comment) => (
-                  <TableRow key={comment.id} data-state={selectedCommentIds.includes(comment.id) ? "selected" : undefined}>
-                    <TableCell className="align-top">
-                      <Checkbox
-                        checked={selectedCommentIds.includes(comment.id)}
-                        onCheckedChange={(checked) => toggleSelectComment(comment.id, checked === true)}
-                        aria-label={`选择评论 ${comment.content.slice(0, 24)}`}
-                      />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <CommentContentCell comment={comment} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <CommentPostCell comment={comment} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <CommentAuthorCell comment={comment} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <CommentStatusCell comment={comment} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <CommentReviewCell comment={comment} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <CommentLikeCell comment={comment} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <CommentUpdateCell comment={comment} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <CommentActionsCell comment={comment} />
-                    </TableCell>
-                  </TableRow>
+                  <CommentMobileCard
+                    key={comment.id}
+                    comment={comment}
+                    selected={selectedCommentIds.includes(comment.id)}
+                    onSelect={(checked) => toggleSelectComment(comment.id, checked)}
+                  />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+              <div className="hidden overflow-x-auto md:block">
+                <Table className="min-w-[1040px]">
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="w-[52px]">
+                        <Checkbox
+                          checked={allCurrentPageSelected || someCurrentPageSelected}
+                          onCheckedChange={(checked) => toggleSelectCurrentPage(checked === true)}
+                          aria-label="全选本页评论"
+                        />
+                      </TableHead>
+                      <TableHead>评论</TableHead>
+                      <TableHead className="w-[220px]">帖子</TableHead>
+                      <TableHead className="w-[150px]">作者</TableHead>
+                      <TableHead className="w-[120px]">状态</TableHead>
+                      <TableHead className="w-[200px]">审核</TableHead>
+                      <TableHead className="w-[90px]">点赞</TableHead>
+                      <TableHead className="w-[120px]">更新时间</TableHead>
+                      <TableHead className="w-[120px] text-right">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.comments.map((comment) => (
+                      <TableRow key={comment.id} data-state={selectedCommentIds.includes(comment.id) ? "selected" : undefined}>
+                        <TableCell className="align-top">
+                          <Checkbox
+                            checked={selectedCommentIds.includes(comment.id)}
+                            onCheckedChange={(checked) => toggleSelectComment(comment.id, checked === true)}
+                            aria-label={`选择评论 ${formatAdminCommentPreview(comment.content).slice(0, 24)}`}
+                          />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <CommentContentCell comment={comment} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <CommentPostCell comment={comment} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <CommentAuthorCell comment={comment} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <CommentStatusCell comment={comment} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <CommentReviewCell comment={comment} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <CommentLikeCell comment={comment} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <CommentUpdateCell comment={comment} />
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <CommentActionsCell comment={comment} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
         <CardFooter>
@@ -498,15 +512,11 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
 }
 
 function CommentContentCell({ comment }: { comment: AdminCommentListItem }) {
-  const content = comment.content || "无评论内容"
+  const content = formatAdminCommentPreview(comment.content)
 
   return (
     <div className="flex items-start gap-3">
-      <Avatar size="sm" className="mt-0.5 rounded-lg">
-        <AvatarFallback className="rounded-lg">
-          {getInitials(comment.authorName)}
-        </AvatarFallback>
-      </Avatar>
+      <UserAvatar name={comment.authorName} avatarPath={comment.authorAvatarPath} size="xs" />
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge className={getCommentStatusBadgeClassName(comment.status)}>
@@ -524,6 +534,81 @@ function CommentContentCell({ comment }: { comment: AdminCommentListItem }) {
         </Tooltip>
       </div>
     </div>
+  )
+}
+
+function CommentMobileCard({
+  comment,
+  selected,
+  onSelect,
+}: {
+  comment: AdminCommentListItem
+  selected: boolean
+  onSelect: (checked: boolean) => void
+}) {
+  const content = formatAdminCommentPreview(comment.content)
+
+  return (
+    <article
+      data-state={selected ? "selected" : undefined}
+      className="rounded-[18px] border border-border/80 bg-card p-3 shadow-xs transition-colors active:bg-muted/50 data-[state=selected]:border-primary/45 data-[state=selected]:bg-primary/5"
+    >
+      <div className="flex items-start gap-3">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={(checked) => onSelect(checked === true)}
+          aria-label={`选择评论 ${content.slice(0, 24)}`}
+          className="mt-1 shrink-0"
+        />
+        <UserAvatar name={comment.authorName} avatarPath={comment.authorAvatarPath} size="sm" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="font-medium text-foreground">{comment.authorName}</p>
+              <p className="mt-1 text-xs text-muted-foreground">@{comment.authorUsername}</p>
+            </div>
+            <CommentActionsCell comment={comment} />
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-3 text-sm leading-6 text-foreground/90 [overflow-wrap:anywhere]">
+        {content}
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <Badge className={getCommentStatusBadgeClassName(comment.status)}>
+          {comment.statusLabel}
+        </Badge>
+        <Badge variant="outline">{comment.parentId ? "回复" : "主评论"}</Badge>
+        {comment.isGodComment ? <Badge variant="default">神评</Badge> : null}
+      </div>
+
+      <div className="mt-3 rounded-[14px] bg-muted/45 px-3 py-2 text-xs">
+        <Link
+          href={getPostCommentPath({ id: comment.postId, slug: comment.postSlug }, comment.id)}
+          className="line-clamp-2 font-medium text-foreground transition-colors hover:text-primary"
+        >
+          {comment.postTitle}
+        </Link>
+        <p className="mt-1 text-muted-foreground">
+          {comment.boardName}
+          {comment.zoneName ? ` · ${comment.zoneName}` : ""}
+        </p>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+        <span className="rounded-full bg-muted/60 px-2.5 py-1">点赞 {formatNumber(comment.likeCount)}</span>
+        <span className="rounded-full bg-muted/60 px-2.5 py-1">创建 {formatMonthDayTime(comment.createdAt)}</span>
+        <span className="rounded-full bg-muted/60 px-2.5 py-1">{comment.updatedAt === comment.createdAt ? "原始" : "已编辑"}</span>
+      </div>
+
+      {comment.reviewNote ? (
+        <p className="mt-3 rounded-[14px] border border-dashed border-border/80 bg-background/70 px-3 py-2 text-xs leading-5 text-muted-foreground">
+          审核备注：{comment.reviewNote}
+        </p>
+      ) : null}
+    </article>
   )
 }
 
@@ -616,7 +701,7 @@ function CommentActionsCell({ comment }: { comment: AdminCommentListItem }) {
   return (
     <div className="flex justify-end">
       <DropdownMenu>
-        <DropdownMenuTrigger className="h-7 rounded-full border border-border bg-background px-2.5 text-xs font-medium transition-colors hover:bg-muted">
+        <DropdownMenuTrigger className="min-h-9 rounded-full border border-border bg-background px-3 text-xs font-medium transition-colors hover:bg-muted">
           操作
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-36">
@@ -802,10 +887,6 @@ function OverviewActionLink({
       <ArrowRight className="h-3.5 w-3.5" />
     </Link>
   )
-}
-
-function getInitials(name: string) {
-  return getAvatarFallback(name)
 }
 
 function getCommentStatusBadgeClassName(

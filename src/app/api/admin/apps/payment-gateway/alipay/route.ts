@@ -13,6 +13,7 @@ export const GET = createAdminRouteHandler(async () => {
   errorMessage: "支付宝后台数据读取失败",
   logPrefix: "[api/admin/apps/payment-gateway/alipay:GET] unexpected error",
   unauthorizedMessage: "无权访问",
+  permission: "admin.apps.manage",
 })
 
 export const POST = createAdminRouteHandler(async ({ request }) => {
@@ -28,4 +29,5 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "支付宝接口配置保存失败",
   logPrefix: "[api/admin/apps/payment-gateway/alipay:POST] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })

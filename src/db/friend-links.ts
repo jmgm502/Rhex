@@ -70,6 +70,13 @@ export async function updateFriendLink(id: string, data: Prisma.FriendLinkUpdate
   })
 }
 
+export async function deleteFriendLink(id: string) {
+  return prisma.friendLink.delete({
+    where: { id },
+    select: friendLinkListSelect,
+  })
+}
+
 export async function countPendingFriendLinks() {
   return prisma.friendLink.count({
     where: { status: FriendLinkStatus.PENDING },

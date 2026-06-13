@@ -15,6 +15,7 @@ import type { AddonEditorProps } from "@/components/addon-editor"
 import type { AvatarCropModalProps } from "@/components/profile/avatar-crop-modal"
 import type { MarkdownEmojiItem } from "@/lib/markdown-emoji"
 import type { UserProfileVisibility } from "@/lib/user-profile-settings"
+import { markContentMutated, markContentMutationRefreshHandled } from "@/lib/content-mutation-marker.client"
 
 const AvatarCropModal = dynamic<AvatarCropModalProps>(
   () => import("@/components/profile/avatar-crop-modal").then((module) => module.AvatarCropModal),
@@ -94,8 +95,6 @@ const visibilityLabelMap: Record<UserProfileVisibility, string> = {
   MEMBERS: "登录公开",
   PRIVATE: "仅自己可见",
 }
-
-const MUTATION_MARKER_KEY = "rhex:content-mutated-at"
 
 function getActivityVisibilityDescription(visibility: UserProfileVisibility) {
   if (visibility === "PUBLIC") {
@@ -295,7 +294,8 @@ export function ProfileEditForm({
   }
 
   function refreshAfterProfileMutation() {
-    window.sessionStorage.setItem(MUTATION_MARKER_KEY, String(Date.now()))
+    const marker = markContentMutated()
+    markContentMutationRefreshHandled(window.location.pathname, marker)
     void refreshCurrentUser()
     router.refresh()
   }

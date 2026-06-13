@@ -171,4 +171,5 @@ export const POST = createAdminRouteHandler(async ({ request, adminUser }) => {
   errorMessage: "处理审核建议失败",
   logPrefix: "[api/admin/apps/ai-reply/moderation/decide:POST] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })

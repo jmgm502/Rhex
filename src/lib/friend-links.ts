@@ -5,6 +5,7 @@ import { FriendLinkStatus } from "@/db/types"
 import {
   countPendingFriendLinks,
   createFriendLink,
+  deleteFriendLink,
   findApprovedFriendLinks,
   findFriendLinkById,
   findFriendLinkByUrl,
@@ -326,4 +327,18 @@ export async function reviewFriendLink(input: {
     sortOrder,
     reviewNote,
   })
+}
+
+export async function deleteFriendLinkByAdmin(id: string) {
+  const normalizedId = normalizeTrimmedText(id, 100)
+  if (!normalizedId) {
+    apiError(400, "缺少友情链接 ID")
+  }
+
+  const existing = await findFriendLinkById(normalizedId)
+  if (!existing) {
+    apiError(404, "友情链接不存在")
+  }
+
+  return deleteFriendLink(normalizedId)
 }

@@ -221,15 +221,17 @@ export default async function UserPage(props: PageProps<"/users/[username]">) {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
-        <main className="mx-auto max-w-[960px] px-4 py-8">
+        <main className="mx-auto max-w-[1200px] px-1 py-8">
           <AddonSlotRenderer slot="user.page.before" props={userSlotProps} />
-          <AccessDeniedCard
-            title="当前主页暂不可访问"
-            description="该用户已对你的访问做出限制，因此你无法查看其主页内容、动态与互动信息。"
-            reason={profileAccess.reason}
-            isLoggedIn={Boolean(currentUser)}
-            redirectTarget={`/users/${params.username}`}
-          />
+          <div className="mx-auto max-w-[960px]">
+            <AccessDeniedCard
+              title="当前主页暂不可访问"
+              description="该用户已对你的访问做出限制，因此你无法查看其主页内容、动态与互动信息。"
+              reason={profileAccess.reason}
+              isLoggedIn={Boolean(currentUser)}
+              redirectTarget={`/users/${params.username}`}
+            />
+          </div>
           <AddonSlotRenderer slot="user.page.after" props={userSlotProps} />
         </main>
       </div>

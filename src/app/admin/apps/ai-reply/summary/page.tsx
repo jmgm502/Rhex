@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { AdminModuleSearch } from "@/components/admin/admin-module-search"
 import { AdminShell } from "@/components/admin/admin-shell"
 import { AiReplySummaryPage } from "@/components/admin/ai-reply-summary-page"
-import { requireAdminUser } from "@/lib/admin"
+import { getAdminActorPermissionState } from "@/lib/admin-page-auth"
 import { getSiteSettings } from "@/lib/site-settings"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,15 +15,21 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AiReplySummaryAdminPage() {
-  const admin = await requireAdminUser()
-  if (!admin) {
+  const auth = await getAdminActorPermissionState("admin.apps.manage")
+  if (!auth.actor) {
     redirect("/login?redirect=/admin/apps/ai-reply/summary")
   }
+  if (!auth.authorized) {
+    redirect("/admin")
+  }
+  const { actor: admin, tier: adminTier } = auth
 
   return (
     <AdminShell
       currentKey="apps"
       adminName={admin.nickname ?? admin.username}
+      adminRole={admin.role}
+      adminTier={adminTier}
       headerDescription="查看并清理 AI 总结缓存。"
       headerSearch={<AdminModuleSearch className="w-full" />}
       breadcrumbs={[

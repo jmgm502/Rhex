@@ -41,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tooltip } from "@/components/ui/tooltip"
+import { formatAdminCommentPreview } from "@/lib/admin-comment-preview"
 import type { AdminDashboardData } from "@/lib/admin-dashboard"
 import { getAdminSettingsHref } from "@/lib/admin-settings-navigation"
 import { getAvatarFallback } from "@/lib/avatar"
@@ -57,7 +58,7 @@ export function AdminOverviewDashboard({
 }: AdminOverviewDashboardProps) {
   return (
     <>
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <section className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-3 2xl:grid-cols-6">
         <CompactStatCard
           title="注册用户"
           value={data.overview.userCount}
@@ -100,7 +101,15 @@ export function AdminOverviewDashboard({
         />
       </section>
 
-      <section className="grid gap-3 xl:grid-cols-4">
+      <section className="rounded-[22px] border border-border/70 bg-muted/20 p-3">
+        <div className="mb-3 flex items-center justify-between gap-3 px-1">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">数据面板</h2>
+            <p className="mt-1 text-xs text-muted-foreground">把运营数据按主题分组，手机端减少纵向滚动。</p>
+          </div>
+          <Badge variant="secondary" className="rounded-full">4 组</Badge>
+        </div>
+        <div className="grid gap-3 xl:grid-cols-4">
         <OverviewMetricPanel
           title="内容脉冲"
           description="看新增和产出节奏"
@@ -200,9 +209,10 @@ export function AdminOverviewDashboard({
             },
           ]}
         />
+        </div>
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-4 rounded-[22px] border border-border/70 bg-muted/20 p-3 xl:grid-cols-[1.2fr_0.8fr]">
         <Card>
           <CardHeader className="border-b">
             <CardTitle>近 7 天增长趋势</CardTitle>
@@ -309,7 +319,7 @@ export function AdminOverviewDashboard({
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid gap-4 rounded-[22px] border border-border/70 bg-muted/20 p-3 xl:grid-cols-[1.15fr_0.85fr]">
         <RecentPostsCard posts={data.recentPosts} />
         <RecentCommentsCard comments={data.recentComments} />
       </div>
@@ -345,7 +355,7 @@ function CompactStatCard({
   }[tone]
 
   return (
-    <Card size="sm">
+    <Card size="sm" className="min-w-[168px] snap-start overflow-hidden border-border/70 bg-card shadow-xs sm:min-w-0">
       <CardContent className="flex items-start justify-between gap-3 py-3">
         <div className="min-w-0">
           <p className="text-[12px] text-muted-foreground">{title}</p>
@@ -879,7 +889,7 @@ function RecentCommentsCard({
                             disabled={content.length < 18}
                           >
                             <span className="block line-clamp-2 text-sm text-foreground/90">
-                              {content}
+                              {formatAdminCommentPreview(content)}
                             </span>
                           </Tooltip>
                           <p className="mt-1 text-xs text-muted-foreground">

@@ -12,8 +12,19 @@ import {
   findAdminUserUploads,
 } from "@/db/admin-user-detail-queries"
 import { findAdminBadgeOptions } from "@/db/badge-queries"
+import { findFounderAdminId } from "@/db/admin-user-action-queries"
 import { apiError } from "@/lib/api-route"
 import type { AdminUserDetailLogItem, AdminUserDetailLogSection, AdminUserDetailResult } from "@/lib/admin-user-management"
+import { ADMIN_PERMISSION_CATALOG } from "@/lib/admin-permission-catalog"
+import {
+  canEditTargetAdminPermissions,
+  getAdminPermissionGrants,
+  getEditableAdminPermissionKeys,
+} from "@/lib/admin-permission-overrides"
+import {
+  getAdminManagementTier,
+  getEffectiveAdminPermissionKeys,
+} from "@/lib/admin-permission-policy"
 import { buildPointEffectSummaryText, resolvePointLogAuditPresentation } from "@/lib/point-log-audit"
 import { requireSiteAdminActor } from "@/lib/moderator-permissions"
 import { resolveUserProfileSettings } from "@/lib/user-profile-settings"
@@ -48,7 +59,7 @@ export async function getAdminUserDetail(userId: number): Promise<AdminUserDetai
     apiError(403, "无权限访问用户详情")
   }
 
-  const [user, availableBadges, loginTotal, loginLogs, checkInTotal, checkInLogs, pointTotal, pointLogs, uploadTotal, uploads, adminActionTotal, adminActionLogs] = await Promise.all([
+  const [user, availableBadges, loginTotal, loginLogs, checkInTotal, checkInLogs, pointTotal, pointLogs, uploadTotal, uploads, adminActionTotal, adminActionLogs, founderAdminId] = await Promise.all([
     findAdminUserDetailById(userId),
     findAdminBadgeOptions(),
     countAdminUserLoginLogs(userId),
@@ -61,6 +72,7 @@ export async function getAdminUserDetail(userId: number): Promise<AdminUserDetai
     findAdminUserUploads(userId),
     countAdminUserActionLogs(userId),
     findAdminUserActionLogs(userId),
+    findFounderAdminId(),
   ])
 
   if (!user) {
@@ -68,6 +80,54 @@ export async function getAdminUserDetail(userId: number): Promise<AdminUserDetai
   }
 
   const profileSettings = resolveUserProfileSettings(user.signature)
+  const targetIsFounder = founderAdminId === user.id
+  const actorIsFounder = founderAdminId === actor.id
+  const adminPermissionGrants = user.role === "ADMIN" && !targetIsFounder
+    ? await getAdminPermissionGrants(user.id)
+    : []
+  const targetAdminActor = user.role === "ADMIN" || user.role === "MODERATOR"
+    ? {
+        id: user.id,
+        username: user.username,
+        nickname: user.nickname,
+        role: user.role,
+        status: user.status,
+        moderatedZoneScopes: user.moderatedZoneScopes.map((scope) => ({
+          zoneId: scope.zoneId,
+          zoneName: scope.zone.name,
+          zoneSlug: scope.zone.slug,
+          canEditSettings: scope.canEditSettings,
+          canWithdrawTreasury: scope.canWithdrawTreasury,
+        })),
+        moderatedBoardScopes: user.moderatedBoardScopes.map((scope) => ({
+          boardId: scope.boardId,
+          boardName: scope.board.name,
+          boardSlug: scope.board.slug,
+          zoneId: scope.board.zoneId ?? null,
+          zoneName: scope.board.zone?.name ?? null,
+          zoneSlug: scope.board.zone?.slug ?? null,
+          canEditSettings: scope.canEditSettings,
+          canWithdrawTreasury: scope.canWithdrawTreasury,
+        })),
+      }
+    : null
+  const targetTier = getAdminManagementTier(targetAdminActor, { isFounder: targetIsFounder })
+  const effectiveAdminPermissions = getEffectiveAdminPermissionKeys(
+    targetTier,
+    ADMIN_PERMISSION_CATALOG.map((item) => item.key),
+    adminPermissionGrants,
+  )
+  const editableAdminPermissions = getEditableAdminPermissionKeys({
+    targetRole: user.role,
+    targetIsFounder,
+  })
+  const canEditAdminPermissions = canEditTargetAdminPermissions({
+    actor,
+    actorIsFounder,
+    targetId: user.id,
+    targetRole: user.role,
+    targetIsFounder,
+  })
 
   const logSections: AdminUserDetailLogSection[] = [
     {
@@ -246,6 +306,10 @@ export async function getAdminUserDetail(userId: number): Promise<AdminUserDetai
       grantSource: item.grantSource,
       grantedAt: item.grantedAt.toISOString(),
     })),
+    adminPermissionGrants,
+    effectiveAdminPermissions,
+    editableAdminPermissions,
+    canEditAdminPermissions,
     logSections,
   }
 }

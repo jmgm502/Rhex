@@ -11,6 +11,7 @@ export interface AdminPostListItem {
   authorId: number
   authorName: string
   authorUsername: string
+  authorAvatarPath: string | null
   authorStatus: string
   createdAt: string
   publishedAt: string | null

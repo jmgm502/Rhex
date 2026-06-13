@@ -7,7 +7,7 @@ import {
 } from "@/db/admin-moderator-scope-queries"
 import { apiError, readOptionalStringField, type JsonObject } from "@/lib/api-route"
 import type { AdminActor } from "@/lib/moderator-permissions"
-import { isSiteAdmin } from "@/lib/moderator-permissions"
+import { canManageBoard, canManageZone, isSiteAdmin } from "@/lib/moderator-permissions"
 import { getUserDisplayName } from "@/lib/user-display"
 
 function readTargetType(value: unknown) {
@@ -18,9 +18,24 @@ function readBoolean(value: unknown) {
   return value === true || value === "true"
 }
 
-function requireStructureModeratorAdmin(actor: AdminActor) {
-  if (!isSiteAdmin(actor)) {
-    apiError(403, "仅管理员可配置版主")
+function ensureCanManageModeratorTarget(actor: AdminActor, target: {
+  targetType: "zone" | "board"
+  targetId: string
+  zoneId?: string | null
+}) {
+  if (isSiteAdmin(actor)) {
+    return
+  }
+
+  if (target.targetType === "zone") {
+    if (!canManageZone(actor, target.targetId)) {
+      apiError(403, "无权配置该分区版主")
+    }
+    return
+  }
+
+  if (!canManageBoard(actor, target.targetId, target.zoneId)) {
+    apiError(403, "无权配置该节点版主")
   }
 }
 
@@ -28,8 +43,6 @@ export async function upsertStructureModerator(params: {
   actor: AdminActor
   body: JsonObject
 }) {
-  requireStructureModeratorAdmin(params.actor)
-
   const rawBody = params.body as Record<string, unknown>
   const targetType = readTargetType(rawBody.targetType)
   const targetId = readOptionalStringField(rawBody, "targetId")
@@ -47,6 +60,12 @@ export async function upsertStructureModerator(params: {
   if (!target) {
     apiError(404, targetType === "zone" ? "分区不存在" : "节点不存在")
   }
+
+  ensureCanManageModeratorTarget(params.actor, {
+    targetType,
+    targetId,
+    zoneId: target.zoneId,
+  })
 
   if (!moderator) {
     apiError(404, "版主用户不存在")
@@ -97,8 +116,6 @@ export async function removeStructureModerator(params: {
   actor: AdminActor
   body: JsonObject
 }) {
-  requireStructureModeratorAdmin(params.actor)
-
   const rawBody = params.body as Record<string, unknown>
   const targetType = readTargetType(rawBody.targetType)
   const targetId = readOptionalStringField(rawBody, "targetId")
@@ -112,6 +129,12 @@ export async function removeStructureModerator(params: {
   if (!target) {
     apiError(404, targetType === "zone" ? "分区不存在" : "节点不存在")
   }
+
+  ensureCanManageModeratorTarget(params.actor, {
+    targetType,
+    targetId,
+    zoneId: target.zoneId,
+  })
 
   await deleteModeratorTargetScope({
     moderatorId,

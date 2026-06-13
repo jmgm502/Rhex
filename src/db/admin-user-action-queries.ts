@@ -99,6 +99,19 @@ export function findUserStatus(userId: number) {
   })
 }
 
+export async function findFounderAdminId() {
+  const founder = await prisma.user.findFirst({
+    where: { role: UserRole.ADMIN },
+    orderBy: [
+      { createdAt: "asc" },
+      { id: "asc" },
+    ],
+    select: { id: true },
+  })
+
+  return founder?.id ?? null
+}
+
 export function updateUserPasswordHash(userId: number, passwordHash: string) {
   return prisma.user.update({
     where: { id: userId },
@@ -147,6 +160,7 @@ export function demoteUserToUser(userId: number) {
         role: UserRole.USER,
       },
     })
+    await tx.adminPermissionGrant.deleteMany({ where: { userId } })
     await tx.moderatorZoneScope.deleteMany({ where: { moderatorId: userId } })
     await tx.moderatorBoardScope.deleteMany({ where: { moderatorId: userId } })
   })

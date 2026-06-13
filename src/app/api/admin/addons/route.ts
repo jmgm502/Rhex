@@ -10,6 +10,7 @@ export const GET = createAdminRouteHandler(async () => {
   errorMessage: "插件宿主数据加载失败",
   logPrefix: "[api/admin/addons:GET] unexpected error",
   unauthorizedMessage: "无权访问插件宿主",
+  permission: "admin.addons.manage",
 })
 
 export const POST = createAdminRouteHandler(async ({ request }) => {
@@ -30,4 +31,5 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "插件宿主操作失败",
   logPrefix: "[api/admin/addons:POST] unexpected error",
   unauthorizedMessage: "无权操作插件宿主",
+  permission: "admin.addons.manage",
 })

@@ -21,7 +21,7 @@ export default async function FriendLinkPage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="mx-auto max-w-[1200px] px-3 py-4 sm:px-4 sm:py-6 lg:px-6">
+      <main className="mx-auto max-w-[1200px] px-1 py-6">
         <AddonSlotRenderer slot="friend-links.page.before" />
         <AddonSurfaceRenderer surface="friend-links.page" props={data}>
           <FriendLinkPageContent links={data.links} announcement={data.announcement} applicationEnabled={data.applicationEnabled && data.enabled} />

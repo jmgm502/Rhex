@@ -27,7 +27,6 @@ import { AdminPostPreviewModal } from "@/components/admin/admin-post-preview-mod
 import { AdminPostMoveBoardButton } from "@/components/admin/admin-post-move-board-button"
 import { BoardSelectField } from "@/components/board/board-select-field"
 import { AdminSummaryStrip } from "@/components/admin/admin-summary-strip"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { showConfirm } from "@/components/ui/alert-dialog"
@@ -62,8 +61,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tooltip } from "@/components/ui/tooltip"
+import { UserAvatar } from "@/components/user/user-avatar"
 import type { AdminPostListItem, AdminPostListResult } from "@/lib/admin-post-management"
-import { getAvatarFallback } from "@/lib/avatar"
 import { formatMonthDayTime, formatNumber } from "@/lib/formatters"
 import { cn } from "@/lib/utils"
 
@@ -478,13 +477,13 @@ export function AdminPostList({ data }: AdminPostListProps) {
                 </Button>
               ) : null}
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" size="sm" className="rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={openBatchMoveDialog}>批量换节点</Button>
-              <Button type="button" variant="outline" size="sm" className="rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("post.lock", "批量关闭回复", `确认关闭已选中的 ${selectedCount} 篇帖子的回复吗？关闭后帖子仍可查看，但不能继续回复。`, "批量关闭回复")}>批量关闭回复</Button>
-              <Button type="button" variant="outline" size="sm" className="rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("post.unlock", "批量开放回复", `确认开放已选中的 ${selectedCount} 篇帖子的回复吗？`, "批量开放回复")}>批量开放回复</Button>
-              <Button type="button" variant="outline" size="sm" className="rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("post.show", "批量上线帖子", `确认上线已选中的 ${selectedCount} 篇帖子吗？`, "批量上线")}>批量上线</Button>
-              <Button type="button" variant="outline" size="sm" className="rounded-full border-rose-200 px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("post.hide", "批量下线帖子", `确认下线已选中的 ${selectedCount} 篇帖子吗？下线后前台不再公开展示。`, "批量下线", true)}>批量下线</Button>
-              <Button type="button" variant="outline" size="sm" className="rounded-full border-rose-200 px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("post.delete", "批量删除帖子", `确认删除已选中的 ${selectedCount} 篇帖子吗？此操作不可撤销。`, "批量删除", true)}>批量删除</Button>
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+              <Button type="button" variant="outline" size="sm" className="min-h-9 rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={openBatchMoveDialog}>批量换节点</Button>
+              <Button type="button" variant="outline" size="sm" className="min-h-9 rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("post.lock", "批量关闭回复", `确认关闭已选中的 ${selectedCount} 篇帖子的回复吗？关闭后帖子仍可查看，但不能继续回复。`, "批量关闭回复")}>批量关闭回复</Button>
+              <Button type="button" variant="outline" size="sm" className="min-h-9 rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("post.unlock", "批量开放回复", `确认开放已选中的 ${selectedCount} 篇帖子的回复吗？`, "批量开放回复")}>批量开放回复</Button>
+              <Button type="button" variant="outline" size="sm" className="min-h-9 rounded-full px-3 text-xs" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("post.show", "批量上线帖子", `确认上线已选中的 ${selectedCount} 篇帖子吗？`, "批量上线")}>批量上线</Button>
+              <Button type="button" variant="outline" size="sm" className="min-h-9 rounded-full border-rose-200 px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("post.hide", "批量下线帖子", `确认下线已选中的 ${selectedCount} 篇帖子吗？下线后前台不再公开展示。`, "批量下线", true)}>批量下线</Button>
+              <Button type="button" variant="outline" size="sm" className="min-h-9 rounded-full border-rose-200 px-3 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700" disabled={selectedCount === 0 || isBatchPending} onClick={() => void confirmBatchAction("post.delete", "批量删除帖子", `确认删除已选中的 ${selectedCount} 篇帖子吗？此操作不可撤销。`, "批量删除", true)}>批量删除</Button>
             </div>
           </div>
         ) : null}
@@ -506,76 +505,92 @@ export function AdminPostList({ data }: AdminPostListProps) {
               <OverviewActionLink href="/admin?tab=posts" label="重置筛选" />
             </div>
           ) : (
-            <Table className="table-fixed">
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-11 px-3">
-                    <Checkbox
-                      checked={allCurrentPageSelected || someCurrentPageSelected}
-                      onCheckedChange={(checked) => toggleSelectCurrentPage(checked === true)}
-                      aria-label="全选本页帖子"
-                    />
-                  </TableHead>
-                  <TableHead className="min-w-0 px-3">帖子</TableHead>
-                  <TableHead className="w-28 px-3">节点</TableHead>
-                  <TableHead className="w-28 px-3">作者</TableHead>
-                  <TableHead className="w-28 px-3">状态</TableHead>
-                  <TableHead className="w-32 px-3">标签 / 审核</TableHead>
-                  <TableHead className="w-24 px-3">评论 / 点赞</TableHead>
-                  <TableHead className="w-24 px-3">收藏 / 浏览</TableHead>
-                  <TableHead className="w-24 px-3">打赏 / 热度</TableHead>
-                  <TableHead className="w-32 px-3">时间</TableHead>
-                  <TableHead className="w-20 px-3 text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              <div className="flex flex-col gap-3 p-3 md:hidden">
                 {data.posts.map((post) => (
-                  <TableRow key={post.id} data-state={selectedPostIds.includes(post.id) ? "selected" : undefined}>
-                    <TableCell className="px-3 align-top">
-                      <Checkbox
-                        checked={selectedPostIds.includes(post.id)}
-                        onCheckedChange={(checked) => toggleSelectPost(post.id, checked === true)}
-                        aria-label={`选择帖子 ${post.title}`}
-                      />
-                    </TableCell>
-                    <TableCell className="min-w-0 px-3 align-top">
-                      <PostTitleCell post={post} />
-                    </TableCell>
-                    <TableCell className="px-3 align-top">
-                      <PostBoardCell post={post} />
-                    </TableCell>
-                    <TableCell className="px-3 align-top">
-                      <PostAuthorCell post={post} />
-                    </TableCell>
-                    <TableCell className="px-3 align-top">
-                      <PostStatusCell post={post} />
-                    </TableCell>
-                    <TableCell className="px-3 align-top">
-                      <PostFlagsCell post={post} />
-                    </TableCell>
-                    <TableCell className="px-3 align-top">
-                      <PostEngagementCell post={post} />
-                    </TableCell>
-                    <TableCell className="px-3 align-top">
-                      <PostTrafficCell post={post} />
-                    </TableCell>
-                    <TableCell className="px-3 align-top">
-                      <PostOpsCell post={post} />
-                    </TableCell>
-                    <TableCell className="px-3 align-top">
-                      <PostTimeCell post={post} />
-                    </TableCell>
-                    <TableCell className="px-3 align-top">
-                      <PostActionsCell
-                        post={post}
-                        canUseGlobalPin={canUseGlobalPin}
-                        groupedBoardOptions={groupedBoardOptions}
-                      />
-                    </TableCell>
-                  </TableRow>
+                  <PostMobileCard
+                    key={post.id}
+                    post={post}
+                    selected={selectedPostIds.includes(post.id)}
+                    onSelect={(checked) => toggleSelectPost(post.id, checked)}
+                    canUseGlobalPin={canUseGlobalPin}
+                    groupedBoardOptions={groupedBoardOptions}
+                  />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+              <div className="hidden overflow-x-auto md:block">
+                <Table className="min-w-[1120px] table-fixed">
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="w-11 px-3">
+                        <Checkbox
+                          checked={allCurrentPageSelected || someCurrentPageSelected}
+                          onCheckedChange={(checked) => toggleSelectCurrentPage(checked === true)}
+                          aria-label="全选本页帖子"
+                        />
+                      </TableHead>
+                      <TableHead className="min-w-0 px-3">帖子</TableHead>
+                      <TableHead className="w-28 px-3">节点</TableHead>
+                      <TableHead className="w-28 px-3">作者</TableHead>
+                      <TableHead className="w-28 px-3">状态</TableHead>
+                      <TableHead className="w-32 px-3">标签 / 审核</TableHead>
+                      <TableHead className="w-24 px-3">评论 / 点赞</TableHead>
+                      <TableHead className="w-24 px-3">收藏 / 浏览</TableHead>
+                      <TableHead className="w-24 px-3">打赏 / 热度</TableHead>
+                      <TableHead className="w-32 px-3">时间</TableHead>
+                      <TableHead className="w-20 px-3 text-right">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.posts.map((post) => (
+                      <TableRow key={post.id} data-state={selectedPostIds.includes(post.id) ? "selected" : undefined}>
+                        <TableCell className="px-3 align-top">
+                          <Checkbox
+                            checked={selectedPostIds.includes(post.id)}
+                            onCheckedChange={(checked) => toggleSelectPost(post.id, checked === true)}
+                            aria-label={`选择帖子 ${post.title}`}
+                          />
+                        </TableCell>
+                        <TableCell className="min-w-0 px-3 align-top">
+                          <PostTitleCell post={post} />
+                        </TableCell>
+                        <TableCell className="px-3 align-top">
+                          <PostBoardCell post={post} />
+                        </TableCell>
+                        <TableCell className="px-3 align-top">
+                          <PostAuthorCell post={post} />
+                        </TableCell>
+                        <TableCell className="px-3 align-top">
+                          <PostStatusCell post={post} />
+                        </TableCell>
+                        <TableCell className="px-3 align-top">
+                          <PostFlagsCell post={post} />
+                        </TableCell>
+                        <TableCell className="px-3 align-top">
+                          <PostEngagementCell post={post} />
+                        </TableCell>
+                        <TableCell className="px-3 align-top">
+                          <PostTrafficCell post={post} />
+                        </TableCell>
+                        <TableCell className="px-3 align-top">
+                          <PostOpsCell post={post} />
+                        </TableCell>
+                        <TableCell className="px-3 align-top">
+                          <PostTimeCell post={post} />
+                        </TableCell>
+                        <TableCell className="px-3 align-top">
+                          <PostActionsCell
+                            post={post}
+                            canUseGlobalPin={canUseGlobalPin}
+                            groupedBoardOptions={groupedBoardOptions}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
         <CardFooter>
@@ -629,9 +644,7 @@ function PostTitleCell({ post }: { post: AdminPostListItem }) {
 
   return (
     <div className="flex min-w-0 items-start gap-3">
-      <Avatar size="sm" className="mt-0.5 shrink-0 rounded-lg">
-        <AvatarFallback className="rounded-lg">{getInitials(post.authorName)}</AvatarFallback>
-      </Avatar>
+      <UserAvatar name={post.authorName} avatarPath={post.authorAvatarPath} size="xs" />
       <div className="min-w-0 flex-1">
         <Tooltip content={post.title} className="w-full" disabled={post.title.length < 20}>
           <Link
@@ -655,6 +668,106 @@ function PostTitleCell({ post }: { post: AdminPostListItem }) {
         )}
       </div>
     </div>
+  )
+}
+
+function PostMobileCard({
+  post,
+  selected,
+  onSelect,
+  canUseGlobalPin,
+  groupedBoardOptions,
+}: {
+  post: AdminPostListItem
+  selected: boolean
+  onSelect: (checked: boolean) => void
+  canUseGlobalPin: boolean
+  groupedBoardOptions: Array<{ zone: string; items: Array<{ value: string; label: string }> }>
+}) {
+  const postHref = post.href ?? `/posts/${post.id}`
+
+  return (
+    <article
+      data-state={selected ? "selected" : undefined}
+      className="rounded-[18px] border border-border/80 bg-card p-3 shadow-xs transition-colors active:bg-muted/50 data-[state=selected]:border-primary/45 data-[state=selected]:bg-primary/5"
+    >
+      <div className="flex items-start gap-3">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={(checked) => onSelect(checked === true)}
+          aria-label={`选择帖子 ${post.title}`}
+          className="mt-1 shrink-0"
+        />
+        <UserAvatar name={post.authorName} avatarPath={post.authorAvatarPath} size="sm" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <Link
+              href={postHref}
+              className={cn(
+                "min-w-0 text-[15px] font-semibold leading-6 text-foreground transition-colors hover:text-primary",
+                getPostTitleAccentClassName(post),
+              )}
+            >
+              {post.title}
+            </Link>
+            <PostActionsCell
+              post={post}
+              canUseGlobalPin={canUseGlobalPin}
+              groupedBoardOptions={groupedBoardOptions}
+            />
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {post.authorName} @{post.authorUsername}
+          </p>
+        </div>
+      </div>
+
+      {post.summary ? (
+        <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere]">
+          {post.summary}
+        </p>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <Badge className={getPostStatusBadgeClassName(post.status)}>{post.statusLabel}</Badge>
+        <Badge variant="outline">{post.typeLabel}</Badge>
+        {post.pinScope ? <Badge className={getPinScopeBadgeClassName(post.pinScope)}>{getPinScopeLabel(post.pinScope)}</Badge> : null}
+        {post.isFeatured ? (
+          <Badge className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200">
+            推荐
+          </Badge>
+        ) : null}
+        {post.isAnnouncement ? (
+          <Badge className="border-transparent bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-200">
+            公告
+          </Badge>
+        ) : null}
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+        <div className="rounded-[14px] bg-muted/45 px-3 py-2">
+          <p className="font-medium text-foreground">{post.boardName}</p>
+          <p className="mt-1">{post.zoneName ?? "未分区"}</p>
+        </div>
+        <div className="rounded-[14px] bg-muted/45 px-3 py-2">
+          <p>创建 {formatMonthDayTime(post.createdAt)}</p>
+          <p className="mt-1">{post.publishedAt ? `发布 ${formatMonthDayTime(post.publishedAt)}` : "未发布"}</p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+        <span className="rounded-full bg-muted/60 px-2.5 py-1">评论 {formatNumber(post.commentCount)}</span>
+        <span className="rounded-full bg-muted/60 px-2.5 py-1">点赞 {formatNumber(post.likeCount)}</span>
+        <span className="rounded-full bg-muted/60 px-2.5 py-1">浏览 {formatNumber(post.viewCount)}</span>
+        <span className="rounded-full bg-muted/60 px-2.5 py-1">收藏 {formatNumber(post.favoriteCount)}</span>
+      </div>
+
+      {post.reviewNote ? (
+        <p className="mt-3 rounded-[14px] border border-dashed border-border/80 bg-background/70 px-3 py-2 text-xs leading-5 text-muted-foreground">
+          审核备注：{post.reviewNote}
+        </p>
+      ) : null}
+    </article>
   )
 }
 
@@ -770,7 +883,7 @@ function PostActionsCell({
   return (
     <div className="flex justify-end">
       <DropdownMenu>
-        <DropdownMenuTrigger className="h-7 rounded-full border border-border bg-background px-2.5 text-xs font-medium transition-colors hover:bg-muted">
+        <DropdownMenuTrigger className="min-h-9 rounded-full border border-border bg-background px-3 text-xs font-medium transition-colors hover:bg-muted">
           操作
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
@@ -1128,10 +1241,6 @@ function OverviewActionLink({
       <ArrowRight className="h-3.5 w-3.5" />
     </Link>
   )
-}
-
-function getInitials(name: string) {
-  return getAvatarFallback(name)
 }
 
 function getPostTitleAccentClassName(post: AdminPostListItem) {

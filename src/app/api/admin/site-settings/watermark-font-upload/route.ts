@@ -144,4 +144,5 @@ export const POST = createAdminRouteHandler(async ({ request, adminUser }) => {
   errorMessage: "上传水印字体失败",
   logPrefix: "[api/admin/site-settings/watermark-font-upload] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.siteSettings.manage",
 })

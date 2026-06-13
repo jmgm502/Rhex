@@ -19,6 +19,11 @@ import {
 } from "lucide-react"
 
 import { getAdminSettingsHref } from "@/lib/admin-settings-navigation"
+import {
+  canAdminTier,
+  type AdminManagementTier,
+  type AdminPermissionKey,
+} from "@/lib/admin-permission-policy"
 
 export type AdminTabKey =
   | "overview"
@@ -73,6 +78,7 @@ export interface AdminNavigationItem {
   icon: LucideIcon
   group: AdminNavigationGroupKey
   adminOnly?: boolean
+  permission?: AdminPermissionKey
   hiddenInNavigation?: boolean
 }
 
@@ -218,6 +224,40 @@ const moderatorNavigationKeys = new Set<AdminNavKey>([
   "structure",
 ])
 
+const adminSettingsSectionsByTier: Record<AdminManagementTier, ReadonlySet<AdminSettingsSectionKey>> = {
+  SUPER_ADMIN: new Set(adminSettingsSections),
+  ADMIN: new Set([
+    "registration",
+    "board-applications",
+    "messages",
+    "friend-links",
+    "invite-codes",
+    "redeem-codes",
+    "vip",
+  ]),
+  SUPER_MODERATOR: new Set([]),
+  MODERATOR: new Set([]),
+  REVIEWER: new Set([]),
+  USER: new Set([]),
+}
+
+const adminSettingsSectionPermissions: Record<AdminSettingsSectionKey, AdminPermissionKey> = {
+  profile: "admin.siteSettings.manage",
+  "markdown-emoji": "admin.siteSettings.manage",
+  "editor-toolbar": "admin.siteSettings.manage",
+  "footer-links": "admin.siteSettings.manage",
+  apps: "admin.siteSettings.manage",
+  registration: "admin.operations.manage",
+  "board-applications": "admin.operations.manage",
+  interaction: "admin.operations.manage",
+  messages: "admin.operations.manage",
+  "friend-links": "admin.operations.manage",
+  "invite-codes": "admin.operations.manage",
+  "redeem-codes": "admin.operations.manage",
+  vip: "admin.operations.manage",
+  upload: "admin.operations.manage",
+}
+
 export const adminNavigation: AdminNavigationItem[] = [
   {
     key: "overview",
@@ -226,6 +266,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     description: "站点核心指标和运营待办。",
     icon: LayoutGrid,
     group: "overview",
+    permission: "admin.overview.view",
   },
   {
     key: "users",
@@ -235,6 +276,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: Users,
     group: "community",
     adminOnly: true,
+    permission: "admin.users.manage",
   },
   {
     key: "posts",
@@ -243,6 +285,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     description: "帖子审核、上下线与推荐。",
     icon: BookText,
     group: "community",
+    permission: "admin.content.manage",
   },
   {
     key: "comments",
@@ -251,6 +294,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     description: "评论审核、隐藏与恢复。",
     icon: MessageSquare,
     group: "community",
+    permission: "admin.comments.manage",
   },
   {
     key: "messages",
@@ -260,6 +304,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: Mail,
     group: "operations",
     adminOnly: true,
+    permission: "admin.operations.manage",
   },
   {
     key: "structure",
@@ -268,6 +313,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     description: "分区、节点和发帖权限。",
     icon: Settings2,
     group: "community",
+    permission: "admin.structure.view",
   },
   {
     key: "board-applications",
@@ -278,6 +324,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     group: "operations",
     adminOnly: true,
     hiddenInNavigation: true,
+    permission: "admin.operations.manage",
   },
   {
     key: "levels",
@@ -287,6 +334,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: Sparkles,
     group: "system",
     adminOnly: true,
+    permission: "admin.operations.manage",
   },
   {
     key: "badges",
@@ -296,6 +344,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: Sparkles,
     group: "system",
     adminOnly: true,
+    permission: "admin.users.grantBadges",
   },
   {
     key: "tasks",
@@ -305,6 +354,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: ListChecks,
     group: "system",
     adminOnly: true,
+    permission: "admin.operations.manage",
   },
   {
     key: "verifications",
@@ -314,6 +364,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: ShieldAlert,
     group: "operations",
     adminOnly: true,
+    permission: "admin.users.grantVerifications",
   },
   {
     key: "announcements",
@@ -323,6 +374,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: Megaphone,
     group: "operations",
     adminOnly: true,
+    permission: "admin.operations.manage",
   },
   {
     key: "custom-pages",
@@ -332,6 +384,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: FileCode2,
     group: "operations",
     adminOnly: true,
+    permission: "admin.operations.manage",
   },
   {
     key: "reports",
@@ -341,6 +394,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: Flag,
     group: "operations",
     adminOnly: true,
+    permission: "admin.operations.manage",
   },
   {
     key: "attachments",
@@ -350,6 +404,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: Files,
     group: "operations",
     adminOnly: true,
+    permission: "admin.operations.manage",
   },
   {
     key: "logs",
@@ -359,6 +414,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: Logs,
     group: "operations",
     adminOnly: true,
+    permission: "admin.logs.view",
   },
   {
     key: "security",
@@ -368,6 +424,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: ShieldAlert,
     group: "operations",
     adminOnly: true,
+    permission: "admin.operations.manage",
   },
    {
     key: "apps",
@@ -377,6 +434,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: AppWindow,
     group: "system",
     adminOnly: true,
+    permission: "admin.apps.manage",
   },
   {
     key: "settings",
@@ -386,6 +444,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     icon: Settings,
     group: "system",
     adminOnly: true,
+    permission: "admin.operations.manage",
   },
  
 ]
@@ -396,11 +455,61 @@ export function getAllowedAdminTabs(role: "ADMIN" | "MODERATOR") {
     : (["posts", "comments", "structure"] satisfies AdminTabKey[])
 }
 
+export function getAllowedAdminTabsByTier(tier: AdminManagementTier) {
+  return getAllowedAdminTabsByPermission(tier)
+}
+
+export function getAllowedAdminTabsByPermission(
+  tier: AdminManagementTier,
+  effectivePermissions?: ReadonlySet<AdminPermissionKey>,
+) {
+  return adminTabs.filter((tab) => {
+    const item = getAdminNavigationItem(tab)
+    return !item.permission || canAdminByTier(tier, item.permission, effectivePermissions)
+  })
+}
+
+export function getAllowedAdminSettingsSections(
+  tier: AdminManagementTier,
+  effectivePermissions?: ReadonlySet<AdminPermissionKey>,
+) {
+  if (!effectivePermissions) {
+    return adminSettingsSections.filter((section) => adminSettingsSectionsByTier[tier].has(section))
+  }
+
+  return adminSettingsSections.filter((section) => effectivePermissions.has(adminSettingsSectionPermissions[section]))
+}
+
+export function canAccessAdminSettingsSection(
+  tier: AdminManagementTier,
+  section: AdminSettingsSectionKey,
+  effectivePermissions?: ReadonlySet<AdminPermissionKey>,
+) {
+  if (!effectivePermissions) {
+    return adminSettingsSectionsByTier[tier].has(section)
+  }
+
+  return effectivePermissions.has(adminSettingsSectionPermissions[section])
+}
+
+export function getDefaultAdminSettingsSection(
+  tier: AdminManagementTier,
+  effectivePermissions?: ReadonlySet<AdminPermissionKey>,
+) {
+  return getAllowedAdminSettingsSections(tier, effectivePermissions)[0] ?? null
+}
+
 export function getAdminNavigation(
   role: "ADMIN" | "MODERATOR",
-  items = adminNavigation
+  items = adminNavigation,
+  tier?: AdminManagementTier,
+  effectivePermissions?: ReadonlySet<AdminPermissionKey>,
 ) {
   const visibleItems = items.filter((item) => !item.hiddenInNavigation)
+
+  if (tier) {
+    return visibleItems.filter((item) => !item.permission || canAdminByTier(tier, item.permission, effectivePermissions))
+  }
 
   if (role === "ADMIN") {
     return visibleItems
@@ -411,9 +520,11 @@ export function getAdminNavigation(
 
 export function getAdminNavigationGroups(
   role: "ADMIN" | "MODERATOR",
-  items = adminNavigation
+  items = adminNavigation,
+  tier?: AdminManagementTier,
+  effectivePermissions?: ReadonlySet<AdminPermissionKey>,
 ): AdminNavigationGroup[] {
-  const resolvedItems = getAdminNavigation(role, items)
+  const resolvedItems = getAdminNavigation(role, items, tier, effectivePermissions)
 
   return (Object.keys(adminNavigationGroupLabels) as AdminNavigationGroupKey[])
     .map((key) => ({
@@ -434,4 +545,33 @@ export function getAdminSettingsGroupForSection(section: string) {
       group.sections.some((item) => item.key === section)
     ) ?? adminSettingsGroups[0]
   )
+}
+
+export function getAdminSettingsGroups(
+  tier?: AdminManagementTier,
+  effectivePermissions?: ReadonlySet<AdminPermissionKey>,
+) {
+  if (!tier) {
+    return adminSettingsGroups
+  }
+
+  const allowedSections = new Set(getAllowedAdminSettingsSections(tier, effectivePermissions))
+  return adminSettingsGroups
+    .map((group) => ({
+      ...group,
+      sections: group.sections.filter((section) => allowedSections.has(section.key)),
+    }))
+    .filter((group) => group.sections.length > 0)
+}
+
+function canAdminByTier(
+  tier: AdminManagementTier,
+  permission: AdminPermissionKey,
+  effectivePermissions?: ReadonlySet<AdminPermissionKey>,
+) {
+  if (effectivePermissions) {
+    return effectivePermissions.has(permission)
+  }
+
+  return canAdminTier(tier, permission)
 }

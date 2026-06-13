@@ -26,10 +26,12 @@ import {
 import { Modal } from "@/components/ui/modal"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatDateTime } from "@/lib/formatters"
+import { cn } from "@/lib/utils"
 
 export function AdminUserModal(props: AdminUserModalProps) {
   const [open, setOpen] = useState(false)
   const [initialTab, setInitialTab] = useState<AdminUserModalTab>("profile")
+  const { triggerClassName } = props
 
   function openPanel(tab: AdminUserModalTab) {
     setInitialTab(tab)
@@ -39,7 +41,7 @@ export function AdminUserModal(props: AdminUserModalProps) {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger className="h-7 rounded-full border border-border bg-background px-2.5 text-xs font-medium transition-colors hover:bg-muted">
+        <DropdownMenuTrigger className={cn("h-7 rounded-full border border-border bg-background px-2.5 text-xs font-medium transition-colors hover:bg-muted", triggerClassName)}>
           管理
           <MoreHorizontal className="h-3.5 w-3.5" />
         </DropdownMenuTrigger>
@@ -60,6 +62,8 @@ export function AdminUserModal(props: AdminUserModalProps) {
 function AdminUserModalDialog({
   user,
   moderatorScopeOptions,
+  actorUserId,
+  actorCanDemoteAdmins,
   open,
   initialTab,
   onClose,
@@ -143,6 +147,8 @@ function AdminUserModalDialog({
               <PermissionsTab
                 activeUser={data.activeUser}
                 moderatorScopeOptions={moderatorScopeOptions}
+                actorUserId={actorUserId}
+                actorCanDemoteAdmins={actorCanDemoteAdmins}
                 isModerator={data.isModerator}
                 permissions={actions.permissions}
                 isPending={actions.isPending}

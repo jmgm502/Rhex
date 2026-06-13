@@ -564,6 +564,7 @@ model User {
   yinYangChallengeDailyStats       YinYangChallengeDailyStat[]
   moderatedZoneScopes              ModeratorZoneScope[]
   moderatedBoardScopes             ModeratorBoardScope[]
+  adminPermissionGrants            AdminPermissionGrant[]
   boardApplications                BoardApplication[]             @relation("boardApplicationApplicant")
   reviewedBoardApplications        BoardApplication[]             @relation("boardApplicationReviewer")
   aiReplyTasksTriggered            AiReplyTask[]                  @relation("AiReplyTaskTriggerUser")
@@ -899,6 +900,20 @@ model ModeratorBoardScope {
   @@unique([moderatorId, boardId])
   @@index([boardId])
   @@index([moderatorId, createdAt])
+}
+
+model AdminPermissionGrant {
+  id            String   @id @default(cuid())
+  userId        Int
+  permissionKey String
+  allowed       Boolean  @default(true)
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionKey])
+  @@index([userId])
+  @@index([permissionKey])
 }
 
 model BoardFollow {

@@ -12,6 +12,8 @@ import {
 } from "@/db/admin-structure-queries"
 
 import { apiError, readOptionalNumberField, readOptionalStringField, type JsonObject } from "@/lib/api-route"
+import { isFounderAdmin } from "@/lib/admin-founder"
+import { canAdminWithPermissionOverrides } from "@/lib/admin-permission-overrides"
 import { normalizeBoardSidebarLinks } from "@/lib/board-sidebar-config"
 import type { AdminActor } from "@/lib/moderator-permissions"
 import { ensureCanEditBoard, ensureCanEditZone, isSiteAdmin } from "@/lib/moderator-permissions"
@@ -422,8 +424,9 @@ export async function deleteStructureItem(params: {
   requestIp: string | null
   actor: AdminActor
 }) {
-  if (!isSiteAdmin(params.actor)) {
-    apiError(403, "仅管理员可删除分区或节点")
+  const actorIsFounder = params.actor.role === "ADMIN" ? await isFounderAdmin(params.actor.id) : false
+  if (!await canAdminWithPermissionOverrides(params.actor, "admin.structure.delete", { isFounder: actorIsFounder })) {
+    apiError(403, "仅超级管理员可删除分区或节点")
   }
 
   const rawBody = params.body as Record<string, unknown>

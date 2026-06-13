@@ -72,4 +72,5 @@ export const GET = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "读取 AI 总结缓存失败",
   logPrefix: "[api/admin/apps/ai-reply/summary/list:GET] unexpected error",
   unauthorizedMessage: "无权访问",
+  permission: "admin.apps.manage",
 })

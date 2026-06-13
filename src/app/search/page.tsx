@@ -131,7 +131,7 @@ export default async function SearchPage(props: PageProps<"/search">) {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="mx-auto max-w-[920px] px-4 py-8 lg:px-6">
+      <main className="mx-auto max-w-[1200px] px-1 py-8">
         <div className="flex flex-col gap-5">
           <AddonSlotRenderer slot="search.page.before" />
           <AddonSurfaceRenderer surface="search.page" pathname="/search" props={{ activeScope, hasKeyword, keyword, results: activeData, scopedResults, settings }}>

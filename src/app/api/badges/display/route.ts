@@ -1,5 +1,6 @@
 import { apiError, apiSuccess, createUserRouteHandler, readJsonBody } from "@/lib/api-route"
 import { toggleDisplayedBadge } from "@/lib/badges"
+import { revalidateUserBadgeMutation } from "@/lib/badge-cache-revalidation"
 
 export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
   const body = await readJsonBody(request)
@@ -10,6 +11,7 @@ export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
   }
 
   const result = await toggleDisplayedBadge(currentUser.id, badgeId)
+  revalidateUserBadgeMutation(currentUser.id)
   return apiSuccess(result, result.message)
 }, {
   errorMessage: "设置失败",

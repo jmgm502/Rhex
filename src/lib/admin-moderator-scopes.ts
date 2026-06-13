@@ -3,7 +3,7 @@ import { UserRole, UserStatus } from "@/db/types"
 import { findModeratorScopeSetup, replaceModeratorScopes } from "@/db/admin-moderator-scope-queries"
 import { apiError, type JsonObject } from "@/lib/api-route"
 import type { AdminActor } from "@/lib/moderator-permissions"
-import { isSiteAdmin } from "@/lib/moderator-permissions"
+import { canManageBoard, canManageZone, isSiteAdmin } from "@/lib/moderator-permissions"
 
 interface ScopeInput {
   id: string
@@ -41,10 +41,6 @@ export async function updateModeratorScopes(params: {
   actor: AdminActor
   body: JsonObject
 }) {
-  if (!isSiteAdmin(params.actor)) {
-    apiError(403, "仅管理员可配置版主管辖范围")
-  }
-
   const rawUserId = params.body.userId
   const userId = typeof rawUserId === "number" ? rawUserId : Number(rawUserId)
   if (!Number.isInteger(userId) || userId <= 0) {
@@ -76,6 +72,18 @@ export async function updateModeratorScopes(params: {
 
   if (boards.length !== boardIds.length) {
     apiError(400, "包含不存在的节点授权项")
+  }
+
+  if (!isSiteAdmin(params.actor)) {
+    const unauthorizedZone = zones.find((zone) => !canManageZone(params.actor, zone.id))
+    if (unauthorizedZone) {
+      apiError(403, "无权配置该分区授权")
+    }
+
+    const unauthorizedBoard = boards.find((board) => !canManageBoard(params.actor, board.id, board.zoneId))
+    if (unauthorizedBoard) {
+      apiError(403, "无权配置该节点授权")
+    }
   }
 
   await replaceModeratorScopes(userId, zoneScopes, boardScopes)

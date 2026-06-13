@@ -66,4 +66,5 @@ export const POST = createAdminRouteHandler<AddonsAdminData | AddonInstallPrevie
   errorMessage: "插件安装失败",
   logPrefix: "[api/admin/addons/install:POST] unexpected error",
   unauthorizedMessage: "无权安装插件",
+  permission: "admin.addons.manage",
 })

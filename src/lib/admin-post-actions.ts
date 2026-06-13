@@ -20,6 +20,8 @@ import {
 } from "@/db/admin-post-action-queries"
 import { revalidateHomeSidebarStatsCache } from "@/lib/home-sidebar-stats"
 import { ensureCanManageBoard, ensureCanManagePost, getAvailablePinScopes } from "@/lib/moderator-permissions"
+import type { AdminActor } from "@/lib/moderator-permissions"
+import { getAdminManagementTier } from "@/lib/admin-permission-policy"
 import { createSystemNotification } from "@/lib/notification-writes"
 import { activatePostAuctionForPost } from "@/lib/post-auctions"
 import { recordApprovedPostTaskEvent } from "@/lib/task-center-service"
@@ -44,8 +46,15 @@ function revalidateAdminPostMutation(post: ManagedPostForRevalidation, options: 
   })
 }
 
+function ensureReviewerCanUsePostAction(actor: AdminActor, action: string) {
+  if (getAdminManagementTier(actor) === "REVIEWER" && action !== "post.approve" && action !== "post.reject") {
+    apiError(403, "审核员只能审核帖子")
+  }
+}
+
 export const adminPostActionHandlers: Record<string, AdminActionDefinition> = {
   "post.feature": defineAdminAction({ targetType: "POST", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员切换推荐状态" }, async (context) => {
+    ensureReviewerCanUsePostAction(context.actor, "post.feature")
     const post = await ensureCanManagePost(context.actor, context.targetId)
     await updatePostFeatureState(context.targetId, !post.isFeatured)
     revalidateAdminPostMutation(post)
@@ -53,6 +62,7 @@ export const adminPostActionHandlers: Record<string, AdminActionDefinition> = {
     return { message: post.isFeatured ? "已取消推荐" : "已设为推荐" }
   }),
   "post.pin": defineAdminAction({ targetType: "POST", revalidatePaths: ["/", "/admin"], buildDetail: (context) => `管理员设置帖子置顶范围为 ${readAdminActionScope(context.body)}` }, async (context) => {
+    ensureReviewerCanUsePostAction(context.actor, "post.pin")
     const normalizedScope = readAdminActionScope(context.body)
     const post = await ensureCanManagePost(context.actor, context.targetId)
     const allowedScopes = getAvailablePinScopes(context.actor, {
@@ -70,6 +80,7 @@ export const adminPostActionHandlers: Record<string, AdminActionDefinition> = {
     return { message: scopeLabel }
   }),
   "post.hide": defineAdminAction({ targetType: "POST", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员下线帖子" }, async (context) => {
+    ensureReviewerCanUsePostAction(context.actor, "post.hide")
     const post = await ensureCanManagePost(context.actor, context.targetId)
     const previousStatus = post.status as AddonReadablePostStatus
     const reason = context.message || "管理员下线帖子"
@@ -100,6 +111,7 @@ export const adminPostActionHandlers: Record<string, AdminActionDefinition> = {
     return { message: "帖子已下线" }
   }),
   "post.delete": defineAdminAction({ targetType: "POST", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员删除帖子" }, async (context) => {
+    ensureReviewerCanUsePostAction(context.actor, "post.delete")
     const reason = context.message || "管理员删除帖子"
     const post = await ensureCanManagePost(context.actor, context.targetId)
     await executeAddonActionHook("post.delete.before", {
@@ -121,6 +133,7 @@ export const adminPostActionHandlers: Record<string, AdminActionDefinition> = {
     return { message: "帖子已删除" }
   }),
   "post.show": defineAdminAction({ targetType: "POST", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员上线帖子" }, async (context) => {
+    ensureReviewerCanUsePostAction(context.actor, "post.show")
     const post = await ensureCanManagePost(context.actor, context.targetId)
     const previousStatus = post.status as AddonReadablePostStatus
     await updatePostStatus(context.targetId, PostStatus.NORMAL, null)
@@ -140,6 +153,7 @@ export const adminPostActionHandlers: Record<string, AdminActionDefinition> = {
     return { message: "帖子已上线" }
   }),
   "post.lock": defineAdminAction({ targetType: "POST", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员关闭帖子回复" }, async (context) => {
+    ensureReviewerCanUsePostAction(context.actor, "post.lock")
     const post = await ensureCanManagePost(context.actor, context.targetId)
     const previousStatus = post.status as AddonReadablePostStatus
     await updatePostStatus(context.targetId, PostStatus.LOCKED)
@@ -155,6 +169,7 @@ export const adminPostActionHandlers: Record<string, AdminActionDefinition> = {
     return { message: "帖子已关闭回复" }
   }),
   "post.unlock": defineAdminAction({ targetType: "POST", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员开放帖子回复" }, async (context) => {
+    ensureReviewerCanUsePostAction(context.actor, "post.unlock")
     const post = await ensureCanManagePost(context.actor, context.targetId)
     const previousStatus = post.status as AddonReadablePostStatus
     await updatePostStatus(context.targetId, PostStatus.NORMAL, null)
@@ -173,6 +188,7 @@ export const adminPostActionHandlers: Record<string, AdminActionDefinition> = {
     return { message: "帖子已开放回复" }
   }),
   "post.moveBoard": defineAdminAction({ targetType: "POST", buildDetail: () => "管理员移动帖子节点" }, async (context) => {
+    ensureReviewerCanUsePostAction(context.actor, "post.moveBoard")
     const boardSlug = requireAdminActionString(context.body, "boardSlug", "缺少目标节点")
     const [post, targetBoard] = await Promise.all([
       ensureCanManagePost(context.actor, context.targetId),
@@ -200,6 +216,7 @@ export const adminPostActionHandlers: Record<string, AdminActionDefinition> = {
 
   }),
   "post.approve": defineAdminAction({ targetType: "POST", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员审核通过帖子" }, async (context) => {
+    ensureReviewerCanUsePostAction(context.actor, "post.approve")
     const post = await ensureCanManagePost(context.actor, context.targetId)
     const previousStatus = post.status as AddonReadablePostStatus
     await updatePostStatus(context.targetId, PostStatus.NORMAL, context.message || null, new Date())
@@ -241,6 +258,7 @@ export const adminPostActionHandlers: Record<string, AdminActionDefinition> = {
     return { message: "帖子已审核通过" }
   }),
   "post.reject": defineAdminAction({ targetType: "POST", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员驳回帖子审核" }, async (context) => {
+    ensureReviewerCanUsePostAction(context.actor, "post.reject")
     const post = await ensureCanManagePost(context.actor, context.targetId)
     if (!context.message) {
       apiError(400, "请填写驳回原因")

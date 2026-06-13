@@ -38,6 +38,7 @@ export const GET = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "AI 后台数据读取失败",
   logPrefix: "[api/admin/apps/ai-reply:GET] unexpected error",
   unauthorizedMessage: "无权访问",
+  permission: "admin.apps.manage",
 })
 
 export const POST = createAdminRouteHandler(async ({ request }) => {
@@ -56,6 +57,7 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "AI 配置保存失败",
   logPrefix: "[api/admin/apps/ai-reply] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })
 
 export const DELETE = createAdminRouteHandler(async ({ request }) => {
@@ -77,4 +79,5 @@ export const DELETE = createAdminRouteHandler(async ({ request }) => {
   errorMessage: "删除任务日志失败",
   logPrefix: "[api/admin/apps/ai-reply:DELETE] unexpected error",
   unauthorizedMessage: "无权操作",
+  permission: "admin.apps.manage",
 })
