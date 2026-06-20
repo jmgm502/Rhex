@@ -64,6 +64,7 @@ interface SecretOnceState {
   title: string
   description: string
   warning: string
+  refreshOnClose?: boolean
   rows: Array<{
     label: string
     value: string
@@ -574,12 +575,13 @@ export function OAuthApplicationsPanel({
     setEditingPaymentApplication(null)
   }
 
-  function showOAuthSecret(payload: { clientId: string; clientSecret: string }) {
+  function showOAuthSecret(payload: { clientId: string; clientSecret: string }, options?: { refreshOnClose?: boolean }) {
     setSecretModal({
       namespace: "OAuth 应用",
       title: "请保存 OAuth 应用密钥",
       description: "client_secret 只会显示这一次。关闭弹窗后无法再次查看，只能重置生成新密钥。",
       warning: "请把 client_secret 存到你的服务端环境变量中，不要提交到前端代码或公开仓库。",
+      refreshOnClose: options?.refreshOnClose,
       rows: [
         { label: "appid / client_id", value: payload.clientId, copyLabel: "client_id" },
         { label: "key / client_secret", value: payload.clientSecret, copyLabel: "client_secret" },
@@ -587,17 +589,30 @@ export function OAuthApplicationsPanel({
     })
   }
 
-  function showPaymentSecret(payload: { paymentId: string; secretKey: string }) {
+  function showPaymentSecret(payload: { paymentId: string; secretKey: string }, options?: { refreshOnClose?: boolean }) {
     setSecretModal({
       namespace: "Payment 应用",
       title: "请保存 Payment 密钥",
       description: "Secret Key 只会显示这一次。关闭弹窗后无法再次查看，只能重置生成新密钥。",
       warning: "请把 Secret Key 存到你的服务端环境变量中。签名时使用 SHA256(Secret Key) 作为 HMAC key。",
+      refreshOnClose: options?.refreshOnClose,
       rows: [
         { label: "Payment ID", value: payload.paymentId, copyLabel: "Payment ID" },
         { label: "Secret Key", value: payload.secretKey, copyLabel: "Secret Key" },
       ],
     })
+  }
+
+  function closeSecretModal() {
+    const shouldRefresh = secretModal?.refreshOnClose
+
+    setSecretModal(null)
+
+    if (shouldRefresh) {
+      startTransition(() => {
+        router.refresh()
+      })
+    }
   }
 
   function resetSecret(client: OAuthClientListItem) {
@@ -620,9 +635,8 @@ export function OAuthApplicationsPanel({
         showOAuthSecret({
           clientId: client.clientId,
           clientSecret: String(result.data?.clientSecret ?? ""),
-        })
+        }, { refreshOnClose: true })
         toast.success("应用密钥已重置", "OAuth 应用")
-        router.refresh()
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "重置密钥失败", "OAuth 应用")
       }
@@ -649,9 +663,8 @@ export function OAuthApplicationsPanel({
         showPaymentSecret({
           paymentId: application.paymentId,
           secretKey: String(result.data?.secretKey ?? ""),
-        })
+        }, { refreshOnClose: true })
         toast.success("Payment Secret Key 已重置", "Payment 应用")
-        router.refresh()
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "重置 Secret Key 失败", "Payment 应用")
       }
@@ -754,7 +767,7 @@ export function OAuthApplicationsPanel({
         client={editingClient}
         isPending={isPending}
         onClose={closeFormModal}
-        onSecret={showOAuthSecret}
+        onSecret={(payload) => showOAuthSecret(payload, { refreshOnClose: true })}
         startTransition={startTransition}
       />
 
@@ -764,11 +777,11 @@ export function OAuthApplicationsPanel({
         application={editingPaymentApplication}
         isPending={isPending}
         onClose={closePaymentFormModal}
-        onSecret={showPaymentSecret}
+        onSecret={(payload) => showPaymentSecret(payload, { refreshOnClose: true })}
         startTransition={startTransition}
       />
 
-      <SecretOnceModal secret={secretModal} onClose={() => setSecretModal(null)} />
+      <SecretOnceModal secret={secretModal} onClose={closeSecretModal} />
     </div>
   )
 }
@@ -1458,7 +1471,9 @@ function OAuthClientFormModal({
             clientSecret: String(result.data?.clientSecret ?? ""),
           })
         }
-        router.refresh()
+        if (client) {
+          router.refresh()
+        }
         onClose()
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "提交 OAuth 应用失败", "OAuth 应用")
@@ -1587,7 +1602,9 @@ function PaymentApplicationFormModal({
             secretKey: String(result.data?.secretKey ?? ""),
           })
         }
-        router.refresh()
+        if (application) {
+          router.refresh()
+        }
         onClose()
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "提交 Payment 应用失败", "Payment 应用")

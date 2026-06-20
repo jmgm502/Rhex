@@ -316,6 +316,10 @@ export type InteractionGateCondition =
       enabled: true
     }
   | {
+      type: "PHONE_VERIFIED"
+      enabled: true
+    }
+  | {
       type: "REGISTERED_MINUTES"
       value: number
     }
