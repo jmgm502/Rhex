@@ -365,11 +365,6 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
       const highlightedFromSearch = searchParams.get("highlight")
       if (highlightedFromSearch) {
         triggerCommentHighlight(highlightedFromSearch)
-        const nextSearchParams = new URLSearchParams(searchParams.toString())
-        nextSearchParams.delete("highlight")
-        const nextSearch = nextSearchParams.toString()
-        const hash = typeof window === "undefined" ? "" : window.location.hash
-        window.history.replaceState(null, "", `${pathname}${nextSearch ? `?${nextSearch}` : ""}${hash}`)
         return
       }
 
@@ -437,6 +432,16 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
         stableAttempts = isSettled ? stableAttempts + 1 : 0
 
         if (stableAttempts >= COMMENT_ANCHOR_SCROLL_STABLE_ATTEMPTS && elapsed >= COMMENT_ANCHOR_SCROLL_MIN_SETTLE_MS) {
+          const currentUrl = new URL(window.location.href)
+          if (currentUrl.searchParams.get("highlight") === highlightedCommentId) {
+            currentUrl.searchParams.delete("highlight")
+            currentUrl.hash = `comment-${highlightedCommentId}`
+            window.history.replaceState(
+              window.history.state,
+              "",
+              `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`,
+            )
+          }
           return
         }
 

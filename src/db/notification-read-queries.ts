@@ -12,6 +12,19 @@ export function countUnreadNotifications(userId: number) {
   })
 }
 
+export function findNotificationTargetById(userId: number, notificationId: string) {
+  return prisma.notification.findFirst({
+    where: {
+      id: notificationId,
+      userId,
+    },
+    select: {
+      relatedType: true,
+      relatedId: true,
+    },
+  })
+}
+
 export async function countUnreadNotificationsByUserIds(userIds: number[]) {
   const normalizedUserIds = [...new Set(userIds.filter((userId) => Number.isInteger(userId) && userId > 0))]
 
